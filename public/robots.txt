@@ -1,0 +1,12 @@
+# STUDY M - 스터디엠
+# https://studym.co.kr
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://studym.co.kr/sitemap.xml
+
+# Disallow admin and internal pages
+Disallow: /admin
+Disallow: /manager

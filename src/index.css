@@ -1,0 +1,44 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    font-size: 16px;
+    /* Base font size for mobile readability */
+  }
+
+  body {
+    background-color: var(--color-brand-gray);
+    color: var(--color-brand-navy);
+    font-family: var(--font-family-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.6;
+    /* Improved line-height for readability */
+  }
+
+  /* Mobile optimization */
+  @media (max-width: 640px) {
+
+    p,
+    li,
+    span {
+      line-height: 1.75;
+    }
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
