@@ -7,8 +7,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { CreditCard, CheckCircle, XCircle, Loader2, AlertCircle } from 'lucide-react';
 
 // API Base URL
-const API_BASE = 'https://study-manager-production-826b.up.railway.app';
-const TOSS_CLIENT_KEY = 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq'; // 테스트 키
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://study-manager-production-826b.up.railway.app';
+const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY || 'test_ck_ex6BJGQOVDvLA4OAxpya8W4w2zNb';
+
 
 interface PaymentInfo {
     id: number;
