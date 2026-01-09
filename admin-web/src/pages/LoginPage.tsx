@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import client from '../api/client';
-import { Lock, Mail, LogIn } from 'lucide-react';
+import { Lock, LogIn } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
-    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
@@ -12,15 +10,13 @@ const LoginPage: React.FC = () => {
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-        try {
-            const response = await client.post('/api/auth/login/', { email, password });
-            // Backend returns access token
-            const { access } = response.data;
-            localStorage.setItem('accessToken', access);
+
+        // Simple password-only authentication
+        if (password === 'studym2025') {
+            localStorage.setItem('adminAuthenticated', 'true');
             navigate('/');
-        } catch (err) {
-            console.error(err);
-            setError('로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.');
+        } else {
+            setError('비밀번호가 올바르지 않습니다.');
         }
     };
 
@@ -41,26 +37,6 @@ const LoginPage: React.FC = () => {
 
                     <form onSubmit={handleLogin} className="space-y-6">
                         <div>
-                            <label className="mb-2 block text-sm font-medium text-gray-700" htmlFor="email">
-                                이메일
-                            </label>
-                            <div className="relative">
-                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                    <Mail className="h-5 w-5 text-gray-400" />
-                                </div>
-                                <input
-                                    className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pl-10 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
-                                    id="email"
-                                    type="email"
-                                    placeholder="admin@example.com"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div>
                             <label className="mb-2 block text-sm font-medium text-gray-700" htmlFor="password">
                                 비밀번호
                             </label>
@@ -72,10 +48,11 @@ const LoginPage: React.FC = () => {
                                     className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pl-10 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
                                     id="password"
                                     type="password"
-                                    placeholder="••••••••"
+                                    placeholder="비밀번호를 입력하세요"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
+                                    autoFocus
                                 />
                             </div>
                         </div>
