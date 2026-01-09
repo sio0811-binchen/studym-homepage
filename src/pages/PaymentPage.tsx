@@ -18,6 +18,8 @@ interface PaymentInfo {
     product_type_display: string;
     amount: number;
     status: string;
+    student_phone?: string;
+    parent_phone?: string;
 }
 
 type PageState = 'loading' | 'ready' | 'processing' | 'success' | 'failed' | 'error';
@@ -89,6 +91,15 @@ const PaymentPage = () => {
         try {
             // @ts-ignore - Toss SDK is loaded dynamically
             const tossPayments = window.TossPayments(TOSS_CLIENT_KEY);
+
+            // Save contact info for success page SMS
+            localStorage.setItem('payment_contact_info', JSON.stringify({
+                student_phone: payment.student_phone,
+                parent_phone: payment.parent_phone,
+                student_name: payment.student_name,
+                product_name: payment.product_type_display,
+                amount: payment.amount
+            }));
 
             await tossPayments.requestPayment('카드', {
                 amount: payment.amount,

@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, Loader2 } from 'lucide-react';
+import { sendAligoSMS } from '../utils/sms';
 
 const API_BASE = 'https://study-manager-production-826b.up.railway.app';
 
@@ -42,6 +43,21 @@ const PaymentSuccessPage = () => {
 
                 if (response.ok && data.status === 'success') {
                     setStatus('success');
+
+                    // Send SMS Notification
+                    const contactInfoStr = localStorage.getItem('payment_contact_info');
+                    if (contactInfoStr) {
+                        try {
+                            const info = JSON.parse(contactInfoStr);
+                            const receivers = [info.student_phone, info.parent_phone].filter(Boolean).join(',');
+                            const msg = `[StudyM] 결제 완료\n안녕하세요 ${info.student_name}님.\n\n요청하신 수강료 결제가 완료되었습니다.\n\n- 상품: ${info.product_name}\n- 금액: ${new Intl.NumberFormat('ko-KR').format(info.amount)}원\n\n감사합니다.`;
+
+                            await sendAligoSMS(receivers, msg);
+                            localStorage.removeItem('payment_contact_info'); // Clean up
+                        } catch (e) {
+                            console.error('SMS Send Failed:', e);
+                        }
+                    }
                 } else {
                     setErrorMessage(data.error?.message || '결제 승인에 실패했습니다.');
                     setStatus('error');

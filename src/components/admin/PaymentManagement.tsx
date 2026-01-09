@@ -23,8 +23,10 @@ import {
     Loader2,
     TrendingUp,
     Clock,
-    CheckCircle
+    CheckCircle,
+    MessageCircle
 } from 'lucide-react';
+import { sendAligoSMS } from '../../utils/sms';
 
 const PRODUCT_TYPES = [
     { value: 'MONTHLY', label: '월간 수강권 (4주)', price: 450000 },
@@ -138,6 +140,22 @@ const PaymentManagement: React.FC = () => {
         );
     }
 
+    const handleSendSMS = async (payment: Payment) => {
+        if (!confirm(`${payment.student_name}님에게 결제 안내 문자를 발송하시겠습니까?`)) return;
+
+        try {
+            const receivers = [payment.student_phone, payment.parent_phone].filter(Boolean).join(',');
+            const link = `${window.location.origin}/pay/${payment.payment_link?.token}`;
+            const msg = `[StudyM] 수강료 결제 안내\n\n${payment.student_name} 학생의 수강료 결제가 생성되었습니다.\n\n- 상품: ${payment.product_type_display || payment.product_type}\n- 금액: ${formatAmount(payment.amount)}\n\n아래 링크를 통해 결제를 진행해주세요.\n${link}`;
+
+            await sendAligoSMS(receivers, msg);
+            alert('안내 문자가 발송되었습니다.');
+        } catch (error) {
+            alert('문자 발송에 실패했습니다.');
+            console.error(error);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -236,6 +254,13 @@ const PaymentManagement: React.FC = () => {
                                                 <>
                                                     {payment.payment_link && payment.payment_link.token && (
                                                         <>
+                                                            <button
+                                                                onClick={() => handleSendSMS(payment)}
+                                                                className="p-1 text-gray-500 hover:text-indigo-600"
+                                                                title="안내 문자 발송"
+                                                            >
+                                                                <MessageCircle className="h-4 w-4" />
+                                                            </button>
                                                             <button
                                                                 onClick={() => copyToClipboard(`${window.location.origin}/pay/${payment.payment_link?.token}`)}
                                                                 className="p-1 text-gray-500 hover:text-blue-600"
