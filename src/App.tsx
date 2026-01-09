@@ -22,6 +22,10 @@ import CompanyAbout from './pages/CompanyAbout';
 import Features from './pages/Features';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 
+// Admin Pages
+import AdminLoginPage from './pages/admin/AdminLoginPage';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+
 // Payment Pages
 import PaymentPage from './pages/PaymentPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
@@ -51,6 +55,10 @@ function App() {
         <Routes>
           {/* Homepage */}
           <Route path="/" element={<Home />} />
+
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminLoginPage />} />
+          <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
 
           {/* Existing Routes */}
           <Route path="/story" element={<StoryPage />} />
