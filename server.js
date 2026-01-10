@@ -293,10 +293,16 @@ app.post('/api/payments/:id/cancel/', async (req, res) => {
         const payment = paymentResult.rows[0];
 
         // Toss 결제 취소 (payment_key가 있는 경우에만)
+        let tossStatus = 'CANCELED';
         if (payment.payment_key) {
-            await axios.post(
+            const cancelData = { cancelReason: cancelReason || '관리자 취소' };
+            if (cancelAmount) {
+                cancelData.cancelAmount = cancelAmount;
+            }
+
+            const response = await axios.post(
                 `https://api.tosspayments.com/v1/payments/${payment.payment_key}/cancel`,
-                { cancelReason: cancelReason || '관리자 취소' }, // 부분 취소 시 cancelAmount 추가 필요하지만 현재는 전체 취소만
+                cancelData,
                 {
                     headers: {
                         'Authorization': getTossAuthHeader(),
@@ -304,11 +310,12 @@ app.post('/api/payments/:id/cancel/', async (req, res) => {
                     }
                 }
             );
+            tossStatus = response.data.status; // CANCELED or PARTIAL_CANCELED
         }
 
         const result = await pool.query(
-            "UPDATE payments SET status = 'CANCELED' WHERE id = $1 RETURNING *",
-            [id]
+            "UPDATE payments SET status = $1 WHERE id = $2 RETURNING *",
+            [tossStatus, id]
         );
         res.json(result.rows[0]);
     } catch (error) {
