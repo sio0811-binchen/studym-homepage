@@ -245,6 +245,29 @@ app.delete('/api/payments/:id/', (req, res) => {
     res.status(204).send();
 });
 
+// 결제 링크 조회 API (결제 페이지용)
+app.get('/api/payment-links/:token/', (req, res) => {
+    const token = req.params.token;
+    const payment = payments.find(p => p.payment_link && p.payment_link.token === token);
+
+    if (!payment) {
+        return res.status(404).json({ error: '결제 정보를 찾을 수 없습니다.' });
+    }
+
+    res.json({
+        payment: {
+            id: payment.id,
+            order_id: payment.order_id,
+            student_name: payment.student_name,
+            product_type_display: payment.product_type_display,
+            amount: payment.amount,
+            status: payment.status,
+            student_phone: payment.student_phone,
+            parent_phone: payment.parent_phone
+        }
+    });
+});
+
 
 // 가맹점 문의 API
 app.post('/api/franchise/inquire/', async (req, res) => {
