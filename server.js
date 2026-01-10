@@ -183,6 +183,24 @@ app.get('/api/franchise-inquiries/', (req, res) => {
     res.json(franchiseInquiries);
 });
 
+// 가맹점 문의 수정 API
+app.patch('/api/franchise-inquiries/:id/', (req, res) => {
+    const id = parseInt(req.params.id);
+    const index = franchiseInquiries.findIndex(f => f.id === id);
+    if (index === -1) {
+        return res.status(404).json({ error: 'Not found' });
+    }
+    franchiseInquiries[index] = { ...franchiseInquiries[index], ...req.body };
+    res.json(franchiseInquiries[index]);
+});
+
+// 가맹점 문의 삭제 API
+app.delete('/api/franchise-inquiries/:id/', (req, res) => {
+    const id = parseInt(req.params.id);
+    franchiseInquiries = franchiseInquiries.filter(f => f.id !== id);
+    res.status(204).send();
+});
+
 // SMS 발송 테스트 API
 app.post('/api/sms/send', async (req, res) => {
     const { to, message } = req.body;
