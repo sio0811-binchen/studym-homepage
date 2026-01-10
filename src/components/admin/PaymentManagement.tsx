@@ -398,6 +398,40 @@ const PaymentManagement: React.FC = () => {
                                                     </button>
                                                 </>
                                             )}
+                                            {/* 결제 완료(PAID/MANUAL) 상태: 영수증 보기 + 취소 버튼 */}
+                                            {(payment.status === 'PAID' || payment.status === 'MANUAL') && (
+                                                <>
+                                                    {payment.receipt_url && (
+                                                        <a
+                                                            href={payment.receipt_url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                                                            title="영수증 보기"
+                                                        >
+                                                            <Receipt className="h-4 w-4" />
+                                                        </a>
+                                                    )}
+                                                    <button
+                                                        onClick={() => setShowCancelModal(payment)}
+                                                        className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                                                        title="결제 취소"
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            if (confirm('정말로 이 결제 내역을 삭제하시겠습니까? (영구 삭제)')) {
+                                                                deleteMutation.mutate(payment.id);
+                                                            }
+                                                        }}
+                                                        className="p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 rounded"
+                                                        title="삭제"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                </>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
