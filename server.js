@@ -25,6 +25,7 @@ const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY || 'NCS2S7JFYO8QSACF';
 const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET || 'CX8O4YCCDLUGVN1GMLEN03CX0JFCPNK8';
 const SOLAPI_SENDER_PHONE = process.env.SOLAPI_SENDER_PHONE || '01098051011';
 const ADMIN_PHONE = process.env.ADMIN_PHONE || '01098051011';
+const TOSS_SECRET_KEY = process.env.TOSS_SECRET_KEY || 'test_sk_DnyRpQWGrN5WWdd7jnKLVkwv1M9E';
 
 // PostgreSQL 연결
 const pool = new Pool({
@@ -83,10 +84,16 @@ async function initDatabase() {
                 status VARCHAR(20) DEFAULT 'PENDING',
                 manual_note TEXT,
                 payment_token VARCHAR(100),
+                payment_key VARCHAR(200),
+                receipt_url VARCHAR(500),
                 paid_at TIMESTAMP,
                 created_at TIMESTAMP DEFAULT NOW()
             )
         `);
+
+        // 기존 테이블에 컬럼 추가 (Migration)
+        await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS payment_key VARCHAR(200)`);
+        await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS receipt_url VARCHAR(500)`);
 
         console.log('✅ Database tables initialized successfully');
     } catch (error) {
@@ -105,6 +112,11 @@ function getSolapiAuthHeader() {
     const salt = CryptoJS.lib.WordArray.random(16).toString();
     const signature = CryptoJS.HmacSHA256(date + salt, SOLAPI_API_SECRET).toString();
     return `HMAC-SHA256 apiKey=${SOLAPI_API_KEY}, date=${date}, salt=${salt}, signature=${signature}`;
+}
+
+// Toss Authorization Header
+function getTossAuthHeader() {
+    return 'Basic ' + Buffer.from(TOSS_SECRET_KEY + ':').toString('base64');
 }
 
 // SMS 발송 함수
@@ -221,6 +233,89 @@ app.delete('/api/consultations/:id/', async (req, res) => {
 });
 
 // ========== 결제 API ==========
+
+// 결제 승인 API (Toss 연동)
+app.post('/api/payment-confirm/confirm/', async (req, res) => {
+    const { paymentKey, orderId, amount } = req.body;
+
+    try {
+        // 1. Toss Payments 승인 API 호출
+        const response = await axios.post(
+            'https://api.tosspayments.com/v1/payments/confirm',
+            { paymentKey, orderId, amount },
+            {
+                headers: {
+                    'Authorization': getTossAuthHeader(),
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        console.log('Toss Payment Approved:', response.data);
+
+        // 2. DB 업데이트
+        const result = await pool.query(
+            `UPDATE payments 
+             SET status = 'PAID', 
+                 payment_key = $1, 
+                 receipt_url = $2, 
+                 paid_at = NOW() 
+             WHERE order_id = $3 
+             RETURNING *`,
+            [paymentKey, response.data.receipt?.url, orderId]
+        );
+
+        if (result.rows.length === 0) {
+            // DB에 없는 orderId인 경우 (생성 API를 안 거치고 결제만??) - 드문 케이스
+            console.error('Payment confirmed but order not found in DB:', orderId);
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        res.json({ status: 'success', data: result.rows[0] });
+
+    } catch (error) {
+        console.error('Payment Confirm Error:', error.response?.data || error.message);
+        res.status(400).json({ status: 'error', error: error.response?.data || { message: error.message } });
+    }
+});
+
+// 결제 취소 API (Toss 연동)
+app.post('/api/payments/:id/cancel/', async (req, res) => {
+    const { id } = req.params;
+    const { cancelReason, cancelAmount } = req.body; // cancelReason from frontend is usually 'reason'
+
+    try {
+        // DB에서 paymentKey 조회
+        const paymentResult = await pool.query('SELECT * FROM payments WHERE id = $1', [id]);
+        if (paymentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Payment not found' });
+        }
+        const payment = paymentResult.rows[0];
+
+        // Toss 결제 취소 (payment_key가 있는 경우에만)
+        if (payment.payment_key) {
+            await axios.post(
+                `https://api.tosspayments.com/v1/payments/${payment.payment_key}/cancel`,
+                { cancelReason: cancelReason || '관리자 취소' }, // 부분 취소 시 cancelAmount 추가 필요하지만 현재는 전체 취소만
+                {
+                    headers: {
+                        'Authorization': getTossAuthHeader(),
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+        }
+
+        const result = await pool.query(
+            "UPDATE payments SET status = 'CANCELED' WHERE id = $1 RETURNING *",
+            [id]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Payment Cancel Error:', error.response?.data || error.message);
+        res.status(500).json({ error: error.response?.data?.message || error.message });
+    }
+});
 
 // 결제 생성
 app.post('/api/payments/', async (req, res) => {
