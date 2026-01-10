@@ -132,6 +132,120 @@ app.delete('/api/consultations/:id/', (req, res) => {
     res.status(204).send();
 });
 
+// ========== 결제 API ==========
+let payments = [];
+
+// 결제 생성 API
+app.post('/api/payments/', (req, res) => {
+    const payment = {
+        id: Date.now(),
+        order_id: `ord_${Date.now()}`,
+        ...req.body,
+        status: 'PENDING',
+        status_display: '대기중',
+        product_type_display: req.body.product_type === 'MONTHLY' ? '월간 수강권 (4주)' : req.body.product_type,
+        created_at: new Date().toISOString(),
+        payment_link: {
+            token: `pay_${Date.now()}`,
+            url: `https://studym.co.kr/pay/pay_${Date.now()}`,
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        }
+    };
+    payments.unshift(payment);
+    console.log('새 결제 생성:', payment);
+    res.status(201).json(payment);
+});
+
+// 결제 목록 조회 API
+app.get('/api/payments/', (req, res) => {
+    const adminPassword = req.query.admin_password || req.headers['x-admin-password'];
+    if (adminPassword !== 'studym2025' && adminPassword !== 'studym001!') {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
+    res.json(payments);
+});
+
+// 결제 통계 API
+app.get('/api/payments/statistics/', (req, res) => {
+    const paidPayments = payments.filter(p => p.status === 'PAID' || p.status === 'MANUAL');
+    const pendingPayments = payments.filter(p => p.status === 'PENDING');
+
+    const thisMonth = new Date();
+    thisMonth.setDate(1);
+    thisMonth.setHours(0, 0, 0, 0);
+
+    const thisMonthPayments = paidPayments.filter(p => new Date(p.created_at) >= thisMonth);
+
+    res.json({
+        summary: {
+            total_completed: paidPayments.reduce((sum, p) => sum + (p.amount || 0), 0),
+            this_month_total: thisMonthPayments.reduce((sum, p) => sum + (p.amount || 0), 0),
+            this_month_count: thisMonthPayments.length,
+            pending_count: pendingPayments.length
+        },
+        by_status: {
+            'PAID': { count: paidPayments.length, total: paidPayments.reduce((sum, p) => sum + (p.amount || 0), 0) },
+            'PENDING': { count: pendingPayments.length, total: pendingPayments.reduce((sum, p) => sum + (p.amount || 0), 0) }
+        }
+    });
+});
+
+// 결제 수동 완료 API
+app.post('/api/payments/:id/manual_complete/', (req, res) => {
+    const id = parseInt(req.params.id);
+    const index = payments.findIndex(p => p.id === id);
+    if (index === -1) {
+        return res.status(404).json({ error: 'Not found' });
+    }
+    payments[index] = {
+        ...payments[index],
+        status: 'MANUAL',
+        status_display: '수동처리',
+        manual_note: req.body.note || '수동 처리',
+        paid_at: new Date().toISOString()
+    };
+    res.json(payments[index]);
+});
+
+// 결제 취소 API
+app.post('/api/payments/:id/cancel/', (req, res) => {
+    const id = parseInt(req.params.id);
+    const index = payments.findIndex(p => p.id === id);
+    if (index === -1) {
+        return res.status(404).json({ error: 'Not found' });
+    }
+    payments[index] = {
+        ...payments[index],
+        status: 'CANCELED',
+        status_display: '취소됨'
+    };
+    res.json(payments[index]);
+});
+
+// 결제 링크 재생성 API
+app.post('/api/payments/:id/regenerate_link/', (req, res) => {
+    const id = parseInt(req.params.id);
+    const index = payments.findIndex(p => p.id === id);
+    if (index === -1) {
+        return res.status(404).json({ error: 'Not found' });
+    }
+    const newLink = {
+        token: `pay_${Date.now()}`,
+        url: `https://studym.co.kr/pay/pay_${Date.now()}`,
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    };
+    payments[index].payment_link = newLink;
+    res.json(newLink);
+});
+
+// 결제 삭제 API
+app.delete('/api/payments/:id/', (req, res) => {
+    const id = parseInt(req.params.id);
+    payments = payments.filter(p => p.id !== id);
+    res.status(204).send();
+});
+
+
 // 가맹점 문의 API
 app.post('/api/franchise/inquire/', async (req, res) => {
     try {
