@@ -6,7 +6,7 @@ const client = axios.create({
 
 // Add a request interceptor (Optional logging)
 client.interceptors.request.use((config) => {
-    // We are using ?admin_password=studym2025 query param for auth mostly,
+    // We are using ?admin_password=... query param for auth mostly,
     // but if we need headers later, add them here.
     return config;
 });
