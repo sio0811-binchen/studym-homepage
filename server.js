@@ -178,6 +178,20 @@ app.post('/api/consultations/', async (req, res) => {
 
         const smsResult = await sendSMS(ADMIN_PHONE, message);
 
+        // 학부모에게도 SMS 발송 (전화번호가 있는 경우)
+        if (parent_phone) {
+            const parentMessage = `[스터디엠] 상담 신청이 접수되었습니다.
+
+학생: ${student_name}
+희망일시: ${consultation_date ? new Date(consultation_date).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) : '미정'}
+
+담당 매니저가 24시간 내에 연락드리겠습니다.
+문의: 010-9805-1011`;
+
+            await sendSMS(parent_phone, parentMessage);
+            console.log('학부모 SMS 발송 완료:', parent_phone);
+        }
+
         res.status(201).json({
             ...consultation,
             sms_sent: smsResult.success

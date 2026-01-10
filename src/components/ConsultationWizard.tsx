@@ -243,10 +243,10 @@ const ConsultationWizard = () => {
                         </div>
                         <button
                             type="submit"
-                            disabled={isSubmittingMock || (!isGeneral && (!watch("parentName") || !watch("parentPhone")))}
+                            disabled={isSubmittingMock || (!isGeneral && (!watch("parentName") || !watch("parentPhone"))) || !watch("consultationDate")}
                             className="w-full py-4 bg-brand-gold text-brand-navy rounded-xl font-bold text-lg hover:bg-yellow-500 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {isSubmittingMock ? '처리중...' : '상담 신청 완료하기'}
+                            {isSubmittingMock ? '처리중...' : (!watch("consultationDate") ? '위에서 상담 일시를 선택해주세요' : '상담 신청 완료하기')}
                         </button>
                     </div>
                 );
