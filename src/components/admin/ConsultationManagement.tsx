@@ -135,7 +135,7 @@ const DetailModal: React.FC<{
                         </div>
                         <div>
                             <label className="text-sm text-slate-500">상담 희망일</label>
-                            <p>{new Date(item.consultation_date).toLocaleDateString()}</p>
+                            <p className="font-medium text-slate-900">{new Date(item.consultation_date).toLocaleString()}</p>
                         </div>
                         {item.target_university && (
                             <div>
@@ -320,7 +320,7 @@ const ConsultationManagement: React.FC = () => {
             item.student_grade,
             item.parent_name,
             item.parent_phone,
-            new Date(item.consultation_date).toLocaleDateString(),
+            new Date(item.consultation_date).toLocaleString(),
             item.target_university || '',
             item.weak_subject || '',
             item.status === 'PENDING' ? '대기중' : item.status === 'CONTACTED' ? '연락완료' : '상담완료',

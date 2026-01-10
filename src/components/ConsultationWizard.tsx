@@ -228,6 +228,13 @@ const ConsultationWizard = () => {
                                         selected={field.value}
                                         onChange={(date) => field.onChange(date)}
                                         inline
+                                        showTimeSelect
+                                        timeFormat="HH:mm"
+                                        timeIntervals={30}
+                                        timeCaption="시간"
+                                        minTime={new Date(0, 0, 0, 10, 0)}
+                                        maxTime={new Date(0, 0, 0, 22, 0)}
+                                        dateFormat="yyyy.MM.dd aa h:mm"
                                         minDate={(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; })()}
                                         calendarClassName="!border-0 !font-sans !rounded-xl !shadow-none"
                                     />

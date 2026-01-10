@@ -171,7 +171,7 @@ app.post('/api/consultations/', async (req, res) => {
 학교: ${student_school || '-'}
 학부모: ${parent_name}
 연락처: ${parent_phone}
-희망일: ${consultation_date ? new Date(consultation_date).toLocaleDateString() : '미정'}
+희망일: ${consultation_date ? new Date(consultation_date).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) : '미정'}
 
 관리자: studym.co.kr/admin`;
 
