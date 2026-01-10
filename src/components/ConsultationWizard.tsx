@@ -61,7 +61,7 @@ const ConsultationWizard = () => {
 
             // 2. 백엔드 시도 (실패해도 OK)
             try {
-                await fetch('/api/consultations/', {
+                await fetch('https://studym-homepage-production-a3c2.up.railway.app/api/consultations/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
