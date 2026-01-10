@@ -2,7 +2,7 @@
  * Express Server for StudyM Homepage
  * - Static file serving (dist folder)
  * - SMS API endpoint (Solapi)
- * - Consultation API endpoint (localStorage alternative - in-memory for demo)
+ * - PostgreSQL Database for persistent storage
  */
 import express from 'express';
 import cors from 'cors';
@@ -10,6 +10,9 @@ import axios from 'axios';
 import CryptoJS from 'crypto-js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import pg from 'pg';
+
+const { Pool } = pg;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,9 +26,74 @@ const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET || 'CX8O4YCCDLUGVN1GMLEN
 const SOLAPI_SENDER_PHONE = process.env.SOLAPI_SENDER_PHONE || '01098051011';
 const ADMIN_PHONE = process.env.ADMIN_PHONE || '01098051011';
 
-// In-memory storage (Railway는 stateless이므로 실제 운영에서는 DB 필요)
-let consultations = [];
-let franchiseInquiries = [];
+// PostgreSQL 연결
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+});
+
+// 테이블 생성 함수
+async function initDatabase() {
+    try {
+        // 상담 신청 테이블
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS consultations (
+                id SERIAL PRIMARY KEY,
+                student_name VARCHAR(100),
+                student_school VARCHAR(200),
+                student_grade VARCHAR(50),
+                parent_name VARCHAR(100),
+                parent_phone VARCHAR(20),
+                consultation_date TIMESTAMP,
+                status VARCHAR(20) DEFAULT 'PENDING',
+                memo TEXT,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        `);
+
+        // 가맹점 문의 테이블
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS franchise_inquiries (
+                id SERIAL PRIMARY KEY,
+                applicant_name VARCHAR(100),
+                phone VARCHAR(20),
+                email VARCHAR(100),
+                region VARCHAR(100),
+                budget VARCHAR(50),
+                has_property BOOLEAN DEFAULT FALSE,
+                status VARCHAR(20) DEFAULT 'NEW',
+                lead_grade VARCHAR(20) DEFAULT 'HOT',
+                memo TEXT,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        `);
+
+        // 결제 테이블
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS payments (
+                id SERIAL PRIMARY KEY,
+                order_id VARCHAR(100) UNIQUE,
+                student_name VARCHAR(100),
+                student_phone VARCHAR(20),
+                parent_phone VARCHAR(20),
+                product_type VARCHAR(50),
+                amount INTEGER,
+                discount_amount INTEGER DEFAULT 0,
+                discount_note VARCHAR(200),
+                status VARCHAR(20) DEFAULT 'PENDING',
+                manual_note TEXT,
+                payment_token VARCHAR(100),
+                paid_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        `);
+
+        console.log('✅ Database tables initialized successfully');
+    } catch (error) {
+        console.error('❌ Database initialization error:', error.message);
+        // DB 연결 실패 시 메모리 모드로 폴백
+    }
+}
 
 // Middleware
 app.use(cors());
@@ -68,28 +136,30 @@ async function sendSMS(to, message) {
     }
 }
 
-// ========== API Routes ==========
+// ========== 상담 API ==========
 
-// 상담 신청 API
+// 상담 신청 생성
 app.post('/api/consultations/', async (req, res) => {
     try {
-        const consultation = {
-            id: Date.now(),
-            ...req.body,
-            status: 'PENDING',
-            created_at: new Date().toISOString()
-        };
+        const { student_name, student_school, student_grade, parent_name, parent_phone, consultation_date } = req.body;
 
-        consultations.unshift(consultation);
+        const result = await pool.query(
+            `INSERT INTO consultations (student_name, student_school, student_grade, parent_name, parent_phone, consultation_date)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             RETURNING *`,
+            [student_name, student_school, student_grade, parent_name, parent_phone, consultation_date]
+        );
+
+        const consultation = result.rows[0];
         console.log('새 상담 신청:', consultation);
 
         // 관리자에게 SMS 알림 발송
         const message = `[스터디엠] 새 상담신청
-학생: ${consultation.student_name} (${consultation.student_grade})
-학교: ${consultation.student_school || '-'}
-학부모: ${consultation.parent_name}
-연락처: ${consultation.parent_phone}
-희망일: ${consultation.consultation_date ? new Date(consultation.consultation_date).toLocaleDateString() : '미정'}
+학생: ${student_name} (${student_grade})
+학교: ${student_school || '-'}
+학부모: ${parent_name}
+연락처: ${parent_phone}
+희망일: ${consultation_date ? new Date(consultation_date).toLocaleDateString() : '미정'}
 
 관리자: studym.co.kr/admin`;
 
@@ -105,182 +175,264 @@ app.post('/api/consultations/', async (req, res) => {
     }
 });
 
-// 상담 목록 조회 API
-app.get('/api/consultations/', (req, res) => {
+// 상담 목록 조회
+app.get('/api/consultations/', async (req, res) => {
     const adminPassword = req.query.admin_password || req.headers['x-admin-password'];
     if (adminPassword !== 'studym2025' && adminPassword !== 'studym001!') {
         return res.status(403).json({ error: 'Unauthorized' });
     }
-    res.json(consultations);
-});
 
-// 상담 상태 수정 API
-app.patch('/api/consultations/:id/', (req, res) => {
-    const id = parseInt(req.params.id);
-    const index = consultations.findIndex(c => c.id === id);
-    if (index === -1) {
-        return res.status(404).json({ error: 'Not found' });
+    try {
+        const result = await pool.query('SELECT * FROM consultations ORDER BY created_at DESC');
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
-    consultations[index] = { ...consultations[index], ...req.body };
-    res.json(consultations[index]);
 });
 
-// 상담 삭제 API
-app.delete('/api/consultations/:id/', (req, res) => {
-    const id = parseInt(req.params.id);
-    consultations = consultations.filter(c => c.id !== id);
-    res.status(204).send();
+// 상담 수정
+app.patch('/api/consultations/:id/', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, memo } = req.body;
+
+        const result = await pool.query(
+            'UPDATE consultations SET status = COALESCE($1, status), memo = COALESCE($2, memo) WHERE id = $3 RETURNING *',
+            [status, memo, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// 상담 삭제
+app.delete('/api/consultations/:id/', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM consultations WHERE id = $1', [req.params.id]);
+        res.status(204).send();
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // ========== 결제 API ==========
-let payments = [];
 
-// 결제 생성 API
-app.post('/api/payments/', (req, res) => {
-    const payment = {
-        id: Date.now(),
-        order_id: `ord_${Date.now()}`,
-        ...req.body,
-        status: 'PENDING',
-        status_display: '대기중',
-        product_type_display: req.body.product_type === 'MONTHLY' ? '월간 수강권 (4주)' : req.body.product_type,
-        created_at: new Date().toISOString(),
-        payment_link: {
-            token: `pay_${Date.now()}`,
-            url: `https://studym.co.kr/pay/pay_${Date.now()}`,
-            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-        }
-    };
-    payments.unshift(payment);
-    console.log('새 결제 생성:', payment);
-    res.status(201).json(payment);
+// 결제 생성
+app.post('/api/payments/', async (req, res) => {
+    try {
+        const { student_name, student_phone, parent_phone, product_type, amount, discount_amount, discount_note } = req.body;
+        const order_id = `ord_${Date.now()}`;
+        const payment_token = `pay_${Date.now()}`;
+
+        const result = await pool.query(
+            `INSERT INTO payments (order_id, student_name, student_phone, parent_phone, product_type, amount, discount_amount, discount_note, payment_token)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+             RETURNING *`,
+            [order_id, student_name, student_phone, parent_phone, product_type, amount, discount_amount || 0, discount_note, payment_token]
+        );
+
+        const payment = result.rows[0];
+        console.log('새 결제 생성:', payment);
+
+        // 응답에 추가 필드 포함
+        res.status(201).json({
+            ...payment,
+            status_display: '대기중',
+            product_type_display: product_type === 'MONTHLY' ? '월간 수강권 (4주)' : product_type,
+            payment_link: {
+                token: payment_token,
+                url: `https://studym.co.kr/pay/${payment_token}`,
+                expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+            }
+        });
+    } catch (error) {
+        console.error('결제 생성 오류:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
-// 결제 목록 조회 API
-app.get('/api/payments/', (req, res) => {
+// 결제 목록 조회
+app.get('/api/payments/', async (req, res) => {
     const adminPassword = req.query.admin_password || req.headers['x-admin-password'];
     if (adminPassword !== 'studym2025' && adminPassword !== 'studym001!') {
         return res.status(403).json({ error: 'Unauthorized' });
     }
-    res.json(payments);
+
+    try {
+        const result = await pool.query('SELECT * FROM payments ORDER BY created_at DESC');
+        // 응답에 추가 필드 포함
+        const payments = result.rows.map(p => ({
+            ...p,
+            status_display: p.status === 'PENDING' ? '대기중' : p.status === 'PAID' ? '결제완료' : p.status === 'MANUAL' ? '수동처리' : p.status === 'CANCELED' ? '취소됨' : p.status,
+            product_type_display: p.product_type === 'MONTHLY' ? '월간 수강권 (4주)' : p.product_type,
+            payment_link: {
+                token: p.payment_token,
+                url: `https://studym.co.kr/pay/${p.payment_token}`,
+                expires_at: new Date(new Date(p.created_at).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
+            }
+        }));
+        res.json(payments);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
-// 결제 통계 API
-app.get('/api/payments/statistics/', (req, res) => {
-    const paidPayments = payments.filter(p => p.status === 'PAID' || p.status === 'MANUAL');
-    const pendingPayments = payments.filter(p => p.status === 'PENDING');
+// 결제 통계
+app.get('/api/payments/statistics/', async (req, res) => {
+    try {
+        const paidResult = await pool.query(
+            "SELECT COUNT(*) as count, COALESCE(SUM(amount), 0) as total FROM payments WHERE status IN ('PAID', 'MANUAL')"
+        );
+        const pendingResult = await pool.query(
+            "SELECT COUNT(*) as count, COALESCE(SUM(amount), 0) as total FROM payments WHERE status = 'PENDING'"
+        );
+        const thisMonthResult = await pool.query(
+            "SELECT COUNT(*) as count, COALESCE(SUM(amount), 0) as total FROM payments WHERE status IN ('PAID', 'MANUAL') AND created_at >= date_trunc('month', CURRENT_DATE)"
+        );
 
-    const thisMonth = new Date();
-    thisMonth.setDate(1);
-    thisMonth.setHours(0, 0, 0, 0);
+        res.json({
+            summary: {
+                total_completed: parseInt(paidResult.rows[0].total),
+                this_month_total: parseInt(thisMonthResult.rows[0].total),
+                this_month_count: parseInt(thisMonthResult.rows[0].count),
+                pending_count: parseInt(pendingResult.rows[0].count)
+            },
+            by_status: {
+                'PAID': { count: parseInt(paidResult.rows[0].count), total: parseInt(paidResult.rows[0].total) },
+                'PENDING': { count: parseInt(pendingResult.rows[0].count), total: parseInt(pendingResult.rows[0].total) }
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
-    const thisMonthPayments = paidPayments.filter(p => new Date(p.created_at) >= thisMonth);
+// 결제 수동 완료
+app.post('/api/payments/:id/manual_complete/', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { note } = req.body;
 
-    res.json({
-        summary: {
-            total_completed: paidPayments.reduce((sum, p) => sum + (p.amount || 0), 0),
-            this_month_total: thisMonthPayments.reduce((sum, p) => sum + (p.amount || 0), 0),
-            this_month_count: thisMonthPayments.length,
-            pending_count: pendingPayments.length
-        },
-        by_status: {
-            'PAID': { count: paidPayments.length, total: paidPayments.reduce((sum, p) => sum + (p.amount || 0), 0) },
-            'PENDING': { count: pendingPayments.length, total: pendingPayments.reduce((sum, p) => sum + (p.amount || 0), 0) }
+        const result = await pool.query(
+            "UPDATE payments SET status = 'MANUAL', manual_note = $1, paid_at = NOW() WHERE id = $2 RETURNING *",
+            [note || '수동 처리', id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Not found' });
         }
-    });
-});
-
-// 결제 수동 완료 API
-app.post('/api/payments/:id/manual_complete/', (req, res) => {
-    const id = parseInt(req.params.id);
-    const index = payments.findIndex(p => p.id === id);
-    if (index === -1) {
-        return res.status(404).json({ error: 'Not found' });
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
-    payments[index] = {
-        ...payments[index],
-        status: 'MANUAL',
-        status_display: '수동처리',
-        manual_note: req.body.note || '수동 처리',
-        paid_at: new Date().toISOString()
-    };
-    res.json(payments[index]);
 });
 
-// 결제 취소 API
-app.post('/api/payments/:id/cancel/', (req, res) => {
-    const id = parseInt(req.params.id);
-    const index = payments.findIndex(p => p.id === id);
-    if (index === -1) {
-        return res.status(404).json({ error: 'Not found' });
-    }
-    payments[index] = {
-        ...payments[index],
-        status: 'CANCELED',
-        status_display: '취소됨'
-    };
-    res.json(payments[index]);
-});
+// 결제 취소
+app.post('/api/payments/:id/cancel/', async (req, res) => {
+    try {
+        const { id } = req.params;
 
-// 결제 링크 재생성 API
-app.post('/api/payments/:id/regenerate_link/', (req, res) => {
-    const id = parseInt(req.params.id);
-    const index = payments.findIndex(p => p.id === id);
-    if (index === -1) {
-        return res.status(404).json({ error: 'Not found' });
-    }
-    const newLink = {
-        token: `pay_${Date.now()}`,
-        url: `https://studym.co.kr/pay/pay_${Date.now()}`,
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-    };
-    payments[index].payment_link = newLink;
-    res.json(newLink);
-});
+        const result = await pool.query(
+            "UPDATE payments SET status = 'CANCELED' WHERE id = $1 RETURNING *",
+            [id]
+        );
 
-// 결제 삭제 API
-app.delete('/api/payments/:id/', (req, res) => {
-    const id = parseInt(req.params.id);
-    payments = payments.filter(p => p.id !== id);
-    res.status(204).send();
-});
-
-// 결제 링크 조회 API (결제 페이지용)
-app.get('/api/payment-links/:token/', (req, res) => {
-    const token = req.params.token;
-    const payment = payments.find(p => p.payment_link && p.payment_link.token === token);
-
-    if (!payment) {
-        return res.status(404).json({ error: '결제 정보를 찾을 수 없습니다.' });
-    }
-
-    res.json({
-        payment: {
-            id: payment.id,
-            order_id: payment.order_id,
-            student_name: payment.student_name,
-            product_type_display: payment.product_type_display,
-            amount: payment.amount,
-            status: payment.status,
-            student_phone: payment.student_phone,
-            parent_phone: payment.parent_phone
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Not found' });
         }
-    });
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
+// 결제 링크 재생성
+app.post('/api/payments/:id/regenerate_link/', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const newToken = `pay_${Date.now()}`;
 
-// 가맹점 문의 API
+        const result = await pool.query(
+            'UPDATE payments SET payment_token = $1 WHERE id = $2 RETURNING *',
+            [newToken, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Not found' });
+        }
+
+        res.json({
+            token: newToken,
+            url: `https://studym.co.kr/pay/${newToken}`,
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// 결제 삭제
+app.delete('/api/payments/:id/', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM payments WHERE id = $1', [req.params.id]);
+        res.status(204).send();
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// 결제 링크 조회 (결제 페이지용)
+app.get('/api/payment-links/:token/', async (req, res) => {
+    try {
+        const { token } = req.params;
+
+        const result = await pool.query(
+            'SELECT * FROM payments WHERE payment_token = $1',
+            [token]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: '결제 정보를 찾을 수 없습니다.' });
+        }
+
+        const p = result.rows[0];
+        res.json({
+            payment: {
+                id: p.id,
+                order_id: p.order_id,
+                student_name: p.student_name,
+                product_type_display: p.product_type === 'MONTHLY' ? '월간 수강권 (4주)' : p.product_type,
+                amount: p.amount,
+                status: p.status,
+                student_phone: p.student_phone,
+                parent_phone: p.parent_phone
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ========== 가맹점 문의 API ==========
+
+// 가맹점 문의 생성
 app.post('/api/franchise/inquire/', async (req, res) => {
     try {
-        const inquiry = {
-            id: Date.now(),
-            ...req.body,
-            status: 'NEW',
-            lead_grade: 'HOT',
-            created_at: new Date().toISOString()
-        };
+        const { applicant_name, phone, email, region, budget, has_property } = req.body;
 
-        franchiseInquiries.unshift(inquiry);
+        const result = await pool.query(
+            `INSERT INTO franchise_inquiries (applicant_name, phone, email, region, budget, has_property)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             RETURNING *`,
+            [applicant_name, phone, email, region, budget, has_property || false]
+        );
+
+        const inquiry = result.rows[0];
         console.log('새 가맹점 문의:', inquiry);
 
         // 관리자에게 SMS 알림 발송
@@ -288,14 +440,14 @@ app.post('/api/franchise/inquire/', async (req, res) => {
             'UNDER_200M': '2억 미만',
             '200M_300M': '2-3억',
             'OVER_300M': '3억 이상'
-        }[inquiry.budget] || inquiry.budget;
+        }[budget] || budget;
 
         const message = `[스터디엠] 가맹점 문의
-신청자: ${inquiry.applicant_name}
-연락처: ${inquiry.phone}
-지역: ${inquiry.region}
+신청자: ${applicant_name}
+연락처: ${phone}
+지역: ${region}
 예산: ${budgetDisplay}
-점포보유: ${inquiry.has_property ? 'O' : 'X'}
+점포보유: ${has_property ? 'O' : 'X'}
 
 관리자: studym.co.kr/admin`;
 
@@ -311,32 +463,52 @@ app.post('/api/franchise/inquire/', async (req, res) => {
     }
 });
 
-// 가맹점 문의 목록 조회 API
-app.get('/api/franchise-inquiries/', (req, res) => {
+// 가맹점 문의 목록 조회
+app.get('/api/franchise-inquiries/', async (req, res) => {
     const adminPassword = req.query.admin_password || req.headers['x-admin-password'];
     if (adminPassword !== 'studym2025' && adminPassword !== 'studym001!') {
         return res.status(403).json({ error: 'Unauthorized' });
     }
-    res.json(franchiseInquiries);
-});
 
-// 가맹점 문의 수정 API
-app.patch('/api/franchise-inquiries/:id/', (req, res) => {
-    const id = parseInt(req.params.id);
-    const index = franchiseInquiries.findIndex(f => f.id === id);
-    if (index === -1) {
-        return res.status(404).json({ error: 'Not found' });
+    try {
+        const result = await pool.query('SELECT * FROM franchise_inquiries ORDER BY created_at DESC');
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
-    franchiseInquiries[index] = { ...franchiseInquiries[index], ...req.body };
-    res.json(franchiseInquiries[index]);
 });
 
-// 가맹점 문의 삭제 API
-app.delete('/api/franchise-inquiries/:id/', (req, res) => {
-    const id = parseInt(req.params.id);
-    franchiseInquiries = franchiseInquiries.filter(f => f.id !== id);
-    res.status(204).send();
+// 가맹점 문의 수정
+app.patch('/api/franchise-inquiries/:id/', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { lead_grade, status, memo } = req.body;
+
+        const result = await pool.query(
+            'UPDATE franchise_inquiries SET lead_grade = COALESCE($1, lead_grade), status = COALESCE($2, status), memo = COALESCE($3, memo) WHERE id = $4 RETURNING *',
+            [lead_grade, status, memo, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
+
+// 가맹점 문의 삭제
+app.delete('/api/franchise-inquiries/:id/', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM franchise_inquiries WHERE id = $1', [req.params.id]);
+        res.status(204).send();
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ========== SMS 및 유틸리티 API ==========
 
 // SMS 발송 테스트 API
 app.post('/api/sms/send', async (req, res) => {
@@ -346,29 +518,38 @@ app.post('/api/sms/send', async (req, res) => {
 });
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
+    let dbStatus = 'disconnected';
+    try {
+        await pool.query('SELECT 1');
+        dbStatus = 'connected';
+    } catch (e) {
+        dbStatus = 'error: ' + e.message;
+    }
+
     res.json({
         status: 'ok',
-        timestamp: new Date().toISOString(),
-        consultations_count: consultations.length,
-        franchise_count: franchiseInquiries.length
+        database: dbStatus,
+        timestamp: new Date().toISOString()
     });
 });
 
 // ========== Static File Serving ==========
-// dist 폴더의 정적 파일 서빙 (Vite 빌드 결과물)
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// SPA fallback - 모든 경로를 index.html로 리다이렉트
+// SPA fallback
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 // ========== Server Start ==========
-app.listen(PORT, () => {
-    console.log('🚨====================================🚨');
-    console.log(`🚀 StudyM Server running on port ${PORT}`);
-    console.log(`📱 SMS Sender: ${SOLAPI_SENDER_PHONE}`);
-    console.log(`📞 Admin Phone: ${ADMIN_PHONE}`);
-    console.log('🚨====================================🚨');
+initDatabase().then(() => {
+    app.listen(PORT, () => {
+        console.log('🚨====================================🚨');
+        console.log(`🚀 StudyM Server running on port ${PORT}`);
+        console.log(`📱 SMS Sender: ${SOLAPI_SENDER_PHONE}`);
+        console.log(`📞 Admin Phone: ${ADMIN_PHONE}`);
+        console.log(`🗄️  Database: ${process.env.DATABASE_URL ? 'PostgreSQL' : 'In-Memory'}`);
+        console.log('🚨====================================🚨');
+    });
 });
