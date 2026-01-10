@@ -23,7 +23,7 @@ const FranchiseManagement: React.FC = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await fetch('https://study-manager-production-826b.up.railway.app/api/franchise-inquiries/?admin_password=studym2025');
+            const res = await fetch('https://studym-homepage-production-a3c2.up.railway.app/api/franchise-inquiries/?admin_password=studym2025');
             if (res.ok) {
                 const data = await res.json();
                 const franchiseArray = Array.isArray(data) ? data : (data.results || []);
@@ -115,15 +115,15 @@ const FranchiseManagement: React.FC = () => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`px-4 py-2 rounded-full text-xs font-bold shadow-md ${item.lead_grade === 'HOT' ? 'bg-red-500 text-white' :
-                                                item.lead_grade === 'WARM' ? 'bg-orange-400 text-white' :
-                                                    'bg-slate-400 text-white'
+                                            item.lead_grade === 'WARM' ? 'bg-orange-400 text-white' :
+                                                'bg-slate-400 text-white'
                                             }`}>
                                             {item.lead_grade}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`px-4 py-2 rounded-full text-xs font-bold shadow-md ${item.status === 'NEW' ? 'bg-purple-500 text-white' :
-                                                'bg-green-500 text-white'
+                                            'bg-green-500 text-white'
                                             }`}>
                                             {item.status === 'NEW' ? '신규' : '완료'}
                                         </span>

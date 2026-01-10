@@ -19,7 +19,7 @@ const FranchiseInquiry = () => {
         e.preventDefault();
 
         try {
-            const response = await fetch('https://study-manager-production-826b.up.railway.app/api/franchise/inquire/', {
+            const response = await fetch('/api/franchise/inquire/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

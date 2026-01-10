@@ -61,7 +61,7 @@ const ConsultationWizard = () => {
 
             // 2. 백엔드 시도 (실패해도 OK)
             try {
-                await fetch('https://study-manager-production-826b.up.railway.app/api/consultations/', {
+                await fetch('/api/consultations/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),

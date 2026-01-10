@@ -29,7 +29,7 @@ const ConsultationManagement: React.FC = () => {
         setLoading(true);
         try {
             // 백엔드 API 호출 (임시 비밀번호 사용)
-            const res = await fetch('https://study-manager-production-826b.up.railway.app/api/consultations/?admin_password=studym2025');
+            const res = await fetch('https://studym-homepage-production-a3c2.up.railway.app/api/consultations/?admin_password=studym2025');
             if (res.ok) {
                 const data = await res.json();
                 const consultationArray = Array.isArray(data) ? data : (data.results || []);
@@ -55,7 +55,7 @@ const ConsultationManagement: React.FC = () => {
     // 상태 변경 요청
     const updateStatus = async (id: string, newStatus: string) => {
         try {
-            const res = await fetch(`https://study-manager-production-826b.up.railway.app/api/consultations/${id}/?admin_password=studym2025`, {
+            const res = await fetch(`https://studym-homepage-production-a3c2.up.railway.app/api/consultations/${id}/?admin_password=studym2025`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: newStatus })
@@ -81,7 +81,7 @@ const ConsultationManagement: React.FC = () => {
 
         try {
             const deletePromises = Array.from(selectedIds).map(id =>
-                fetch(`https://study-manager-production-826b.up.railway.app/api/consultations/${id}/?admin_password=studym2025`, {
+                fetch(`https://studym-homepage-production-a3c2.up.railway.app/api/consultations/${id}/?admin_password=studym2025`, {
                     method: 'DELETE'
                 })
             );

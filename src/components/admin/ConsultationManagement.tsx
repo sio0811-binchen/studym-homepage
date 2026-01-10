@@ -18,7 +18,7 @@ interface ConsultationData {
     memo?: string;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://study-manager-production-826b.up.railway.app';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://studym-homepage-production-a3c2.up.railway.app';
 const ADMIN_PASSWORD = 'studym001!';
 
 const SAMPLE_DATA: ConsultationData[] = [
