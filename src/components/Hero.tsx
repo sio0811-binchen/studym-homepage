@@ -1,35 +1,7 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, TrendingUp, BarChart3, Briefcase } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { ArrowRight, TrendingUp, BarChart3 } from 'lucide-react';
 
 const Hero = () => {
-    // Countdown Timer State
-    const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-
-    useEffect(() => {
-        const targetDate = new Date('2026-01-05T00:00:00'); // 윈터스쿨 시작일
-
-        const updateTimer = () => {
-            const now = new Date();
-            const diff = targetDate.getTime() - now.getTime();
-
-            if (diff <= 0) {
-                setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-                return;
-            }
-
-            setTimeLeft({
-                days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-                hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-                minutes: Math.floor((diff / 1000 / 60) % 60),
-                seconds: Math.floor((diff / 1000) % 60),
-            });
-        };
-
-        updateTimer();
-        const interval = setInterval(updateTimer, 1000);
-        return () => clearInterval(interval);
-    }, []);
     const scrollToConsultation = () => {
         document.getElementById('consultation')?.scrollIntoView({ behavior: 'smooth' });
     };
@@ -66,44 +38,6 @@ const Hero = () => {
                     transition={{ duration: 0.8 }}
                     className="max-w-6xl mx-auto"
                 >
-                    {/* Countdown Timer Badge */}
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-gold/20 to-amber-500/20 border border-brand-gold/40 rounded-full text-brand-gold text-sm font-semibold mb-4 backdrop-blur-sm"
-                    >
-                        <Briefcase className="w-4 h-4" />
-                        윈터스쿨 오픈 D-{timeLeft.days}
-                    </motion.div>
-
-                    {/* Countdown Timer Display */}
-                    {timeLeft.days > 0 && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.4 }}
-                            className="flex items-center justify-center gap-1 sm:gap-3 mb-6 sm:mb-8 px-2"
-                        >
-                            <div className="flex items-center gap-1 sm:gap-2 font-mono text-base sm:text-xl md:text-3xl">
-                                <div className="bg-brand-navy/80 border border-brand-gold/30 px-2 sm:px-4 py-2 sm:py-3 rounded-lg backdrop-blur-md">
-                                    <div className="text-[10px] sm:text-xs text-brand-gold/60 mb-1 font-sans">DAYS</div>
-                                    <div className="text-white font-bold">{String(timeLeft.days).padStart(2, '0')}</div>
-                                </div>
-                                <span className="text-slate-400">:</span>
-                                <div className="bg-brand-navy/80 border border-brand-gold/30 px-2 sm:px-4 py-2 sm:py-3 rounded-lg backdrop-blur-md">
-                                    <div className="text-[10px] sm:text-xs text-brand-gold/60 mb-1 font-sans">HRS</div>
-                                    <div className="text-white font-bold">{String(timeLeft.hours).padStart(2, '0')}</div>
-                                </div>
-                                <span className="text-slate-400">:</span>
-                                <div className="bg-brand-navy/80 border border-brand-gold/30 px-2 sm:px-4 py-2 sm:py-3 rounded-lg backdrop-blur-md">
-                                    <div className="text-[10px] sm:text-xs text-brand-gold/60 mb-1 font-sans">MIN</div>
-                                    <div className="text-white font-bold">{String(timeLeft.minutes).padStart(2, '0')}</div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-
                     {/* Main Headline - PE Logic */}
                     <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-6 md:mb-8 leading-[1.15] tracking-tight">
                         <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-slate-300">
