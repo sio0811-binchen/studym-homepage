@@ -30,6 +30,7 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import PaymentPage from './pages/PaymentPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentFailPage from './pages/PaymentFailPage';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Router wrapper for page tracking
 function RouterTracker() {
@@ -50,46 +51,48 @@ function App() {
 
   return (
     <>
-      <BrowserRouter>
-        <RouterTracker />
-        <Routes>
-          {/* Homepage */}
-          <Route path="/" element={<Home />} />
+      <ErrorBoundary>
+        <BrowserRouter>
+          <RouterTracker />
+          <Routes>
+            {/* Homepage */}
+            <Route path="/" element={<Home />} />
 
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminLoginPage />} />
-          <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminLoginPage />} />
+            <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
 
-          {/* Existing Routes */}
-          <Route path="/story" element={<StoryPage />} />
-          <Route path="/diagnosis" element={<DiagnosisPage />} />
-          <Route path="/manager" element={<ManagerLogin />} />
-          <Route path="/manager/dashboard" element={<ManagerDashboard />} />
-          <Route path="/programs/standard" element={<StandardPage />} />
-          <Route path="/programs/weekly" element={<WeeklyPage />} />
-          <Route path="/programs/winter-school" element={<WinterSchoolPage />} />
+            {/* Existing Routes */}
+            <Route path="/story" element={<StoryPage />} />
+            <Route path="/diagnosis" element={<DiagnosisPage />} />
+            <Route path="/manager" element={<ManagerLogin />} />
+            <Route path="/manager/dashboard" element={<ManagerDashboard />} />
+            <Route path="/programs/standard" element={<StandardPage />} />
+            <Route path="/programs/weekly" element={<WeeklyPage />} />
+            <Route path="/programs/winter-school" element={<WinterSchoolPage />} />
 
-          {/* Blog Pages (Existing - with 30-year expert tone) */}
-          <Route path="/columns" element={<EducationColumn />} />
-          <Route path="/column/:slug" element={<ColumnDetail />} />
+            {/* Blog Pages (Existing - with 30-year expert tone) */}
+            <Route path="/columns" element={<EducationColumn />} />
+            <Route path="/column/:slug" element={<ColumnDetail />} />
 
-          {/* Other Pages */}
-          <Route path="/franchise" element={<FranchiseInquiry />} />
-          <Route path="/branches" element={<BranchPromotion />} />
-          <Route path="/locations" element={<Locations />} />
-          <Route path="/manual" element={<OperationManual />} />
+            {/* Other Pages */}
+            <Route path="/franchise" element={<FranchiseInquiry />} />
+            <Route path="/branches" element={<BranchPromotion />} />
+            <Route path="/locations" element={<Locations />} />
+            <Route path="/manual" element={<OperationManual />} />
 
-          {/* Footer Pages */}
-          <Route path="/about" element={<CompanyAbout />} />
-          <Route path="/features" element={<Features />} />
-          <Route path="/privacy" element={<PrivacyPolicy />} />
+            {/* Footer Pages */}
+            <Route path="/about" element={<CompanyAbout />} />
+            <Route path="/features" element={<Features />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
 
-          {/* Payment Pages */}
-          <Route path="/pay/:token" element={<PaymentPage />} />
-          <Route path="/pay/:token/success" element={<PaymentSuccessPage />} />
-          <Route path="/pay/:token/fail" element={<PaymentFailPage />} />
-        </Routes>
-      </BrowserRouter>
+            {/* Payment Pages */}
+            <Route path="/pay/:token" element={<PaymentPage />} />
+            <Route path="/pay/:token/success" element={<PaymentSuccessPage />} />
+            <Route path="/pay/:token/fail" element={<PaymentFailPage />} />
+          </Routes>
+        </BrowserRouter>
+      </ErrorBoundary>
       <Analytics />
     </>
   );
