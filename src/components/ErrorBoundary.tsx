@@ -28,7 +28,8 @@ class ErrorBoundary extends Component<Props, State> {
         if (
             error.message.includes('Failed to fetch dynamically imported module') ||
             error.message.includes('Loading chunk') ||
-            error.message.includes('Importing a module script failed')
+            error.message.includes('Importing a module script failed') ||
+            error.message.includes('Cannot read properties of undefined')
         ) {
             const hasReloaded = sessionStorage.getItem('retry-reload');
             if (!hasReloaded) {

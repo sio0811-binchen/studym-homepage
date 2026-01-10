@@ -161,7 +161,7 @@ const Chatbot = () => {
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-slate-50">
-                            {messages.map((msg) => (
+                            {messages.filter(msg => msg && msg.type).map((msg) => (
                                 <div key={msg.id} className={`flex flex-col ${msg.type === 'user' ? 'items-end' : 'items-start'}`}>
 
                                     {/* Message Bubble */}
