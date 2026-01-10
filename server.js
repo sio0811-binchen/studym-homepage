@@ -25,7 +25,7 @@ const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY || 'NCS2S7JFYO8QSACF';
 const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET || 'CX8O4YCCDLUGVN1GMLEN03CX0JFCPNK8';
 const SOLAPI_SENDER_PHONE = process.env.SOLAPI_SENDER_PHONE || '01098051011';
 const ADMIN_PHONE = process.env.ADMIN_PHONE || '01098051011';
-const TOSS_SECRET_KEY = process.env.TOSS_SECRET_KEY || 'test_sk_DnyRpQWGrN5WWdd7jnKLVkwv1M9E';
+const TOSS_SECRET_KEY = process.env.TOSS_SECRET_KEY || 'test_sk_DnyRpQWGrN5WWdd7jnKLVKwv1M9E';
 
 // PostgreSQL 연결
 const pool = new Pool({
