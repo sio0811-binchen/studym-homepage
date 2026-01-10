@@ -94,6 +94,7 @@ async function initDatabase() {
         // 기존 테이블에 컬럼 추가 (Migration)
         await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS payment_key VARCHAR(200)`);
         await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS receipt_url VARCHAR(500)`);
+        await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS canceled_amount INTEGER DEFAULT 0`);
 
         console.log('✅ Database tables initialized successfully');
     } catch (error) {
@@ -313,9 +314,13 @@ app.post('/api/payments/:id/cancel/', async (req, res) => {
             tossStatus = response.data.status; // CANCELED or PARTIAL_CANCELED
         }
 
+        // 취소 금액 계산 (부분 취소 시 누적)
+        const canceledAmount = cancelAmount || payment.amount;
+        const totalCanceled = (payment.canceled_amount || 0) + canceledAmount;
+
         const result = await pool.query(
-            "UPDATE payments SET status = $1 WHERE id = $2 RETURNING *",
-            [tossStatus, id]
+            "UPDATE payments SET status = $1, canceled_amount = $2 WHERE id = $3 RETURNING *",
+            [tossStatus, totalCanceled, id]
         );
         res.json(result.rows[0]);
     } catch (error) {

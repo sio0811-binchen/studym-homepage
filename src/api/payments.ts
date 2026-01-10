@@ -12,7 +12,8 @@ export interface Payment {
     product_type: string;
     product_type_display: string;
     amount: number;
-    status: 'PENDING' | 'PAID' | 'FAILED' | 'CANCELED' | 'MANUAL';
+    canceled_amount?: number; // 취소된 금액 (부분 취소 시 누적)
+    status: 'PENDING' | 'PAID' | 'FAILED' | 'CANCELED' | 'MANUAL' | 'PARTIAL_CANCELED';
     status_display: string;
     days?: number;
     start_date?: string;

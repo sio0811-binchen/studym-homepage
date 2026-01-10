@@ -151,6 +151,7 @@ const PaymentManagement: React.FC = () => {
             MANUAL: 'bg-blue-100 text-blue-800',
             FAILED: 'bg-red-100 text-red-800',
             CANCELED: 'bg-gray-100 text-gray-800',
+            PARTIAL_CANCELED: 'bg-orange-100 text-orange-800',
         };
         const labels: Record<string, string> = {
             PENDING: '대기중',
@@ -158,6 +159,7 @@ const PaymentManagement: React.FC = () => {
             MANUAL: '수동처리',
             FAILED: '실패',
             CANCELED: '취소됨',
+            PARTIAL_CANCELED: '부분취소',
         };
         return (
             <span className={`px-2 py-1 rounded-full text-xs font-semibold ${styles[status] || 'bg-gray-100'}`}>
@@ -316,7 +318,12 @@ const PaymentManagement: React.FC = () => {
                                         {payment.product_type_display || payment.product_type}
                                     </td>
                                     <td className="px-4 py-3 font-medium">
-                                        {formatAmount(payment.amount)}
+                                        <div>{formatAmount(payment.amount)}</div>
+                                        {payment.canceled_amount && payment.canceled_amount > 0 && (
+                                            <div className="text-xs text-orange-600">
+                                                (취소: {formatAmount(payment.canceled_amount)}, 남은: {formatAmount(payment.amount - payment.canceled_amount)})
+                                            </div>
+                                        )}
                                     </td>
                                     <td className="px-4 py-3">
                                         {getStatusBadge(payment.status)}
