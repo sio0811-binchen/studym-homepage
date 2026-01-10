@@ -11,6 +11,7 @@ import {
     cancelPayment,
     regeneratePaymentLink,
     fetchPaymentStatistics,
+    deletePayment,
 } from '../../api/payments';
 import type { Payment, PaymentCreateData } from '../../api/payments';
 import {
@@ -27,7 +28,8 @@ import {
     CheckCircle,
     MessageCircle,
     Calendar,
-    Receipt
+    Receipt,
+    Trash2
 } from 'lucide-react';
 import { sendAligoSMS } from '../../utils/sms';
 import { formatPhoneOnInput, extractDigits } from '../../utils/phoneFormat';
@@ -102,6 +104,18 @@ const PaymentManagement: React.FC = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['payments'] });
         },
+    });
+
+    // Delete mutation
+    const deleteMutation = useMutation({
+        mutationFn: deletePayment,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['payments'] });
+            alert('결제 내역이 삭제되었습니다.');
+        },
+        onError: (err) => {
+            alert('삭제 실패: ' + (err as Error).message);
+        }
     });
 
     const copyToClipboard = (text: string) => {
@@ -370,6 +384,17 @@ const PaymentManagement: React.FC = () => {
                                                         title="취소"
                                                     >
                                                         <X className="h-4 w-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            if (confirm('정말로 이 결제 내역을 삭제하시겠습니까? (영구 삭제)')) {
+                                                                deleteMutation.mutate(payment.id);
+                                                            }
+                                                        }}
+                                                        className="p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 rounded"
+                                                        title="삭제"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
                                                     </button>
                                                 </>
                                             )}

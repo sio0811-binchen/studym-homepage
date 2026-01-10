@@ -147,6 +147,15 @@ export const cancelPayment = async (paymentId: number, cancelReason?: string, ca
 };
 
 /**
+ * Delete payment
+ */
+export const deletePayment = async (paymentId: number): Promise<void> => {
+    await client.delete(
+        `/api/payments/${paymentId}/?admin_password=${ADMIN_PASSWORD}`
+    );
+};
+
+/**
  * Regenerate payment link
  */
 export const regeneratePaymentLink = async (paymentId: number): Promise<{ token: string; url: string; expires_at: string }> => {

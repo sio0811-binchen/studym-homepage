@@ -92,8 +92,8 @@ function App() {
             <Route path="/pay/:token/fail" element={<PaymentFailPage />} />
           </Routes>
         </BrowserRouter>
+        <Analytics />
       </ErrorBoundary>
-      <Analytics />
     </>
   );
 }
