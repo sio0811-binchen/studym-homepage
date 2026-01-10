@@ -25,21 +25,25 @@ export interface Payment {
         url: string;
         expires_at: string;
     };
+    receipt_url?: string; // 영수증 URL
 }
 
 export interface PaymentCreateData {
     student_name: string;
     student_phone: string;
-    parent_phone: string;
+    parent_phone?: string;  // 선택 입력
     product_type: 'MONTHLY' | 'WEEKLY' | 'WINTER_SCHOOL' | 'PRORATED';
     days?: number;
+    amount?: number;  // 최종 결제 금액
     custom_amount?: number;
+    discount_amount?: number;  // 할인 금액
+    discount_note?: string;  // 할인 사유
     start_date?: string;
     end_date?: string;
 }
 
 // Admin password for temporary access
-const ADMIN_PASSWORD = 'studym2025';
+const ADMIN_PASSWORD = 'studym001!';
 
 const SAMPLE_PAYMENTS: Payment[] = [
     {
@@ -131,9 +135,13 @@ export const completePaymentManually = async (paymentId: number, note?: string):
 /**
  * Cancel payment
  */
-export const cancelPayment = async (paymentId: number): Promise<Payment> => {
+export const cancelPayment = async (paymentId: number, cancelReason?: string, cancelAmount?: number): Promise<Payment> => {
     const response = await client.post(
-        `/api/payments/${paymentId}/cancel/?admin_password=${ADMIN_PASSWORD}`
+        `/api/payments/${paymentId}/cancel/?admin_password=${ADMIN_PASSWORD}`,
+        {
+            cancelReason: cancelReason || '관리자 취소',
+            cancelAmount: cancelAmount // 부분 취소 금액 (백엔드 지원 시 동작)
+        }
     );
     return response.data;
 };

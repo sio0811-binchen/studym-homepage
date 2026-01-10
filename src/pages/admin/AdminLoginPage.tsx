@@ -19,7 +19,7 @@ const AdminLoginPage: React.FC = () => {
         setError('');
 
         // 비밀번호 인증
-        if (password === 'studym2025') {
+        if (password === 'studym001!') {
             localStorage.setItem('adminAuthenticated', 'true');
             navigate('/admin/dashboard');
         } else {

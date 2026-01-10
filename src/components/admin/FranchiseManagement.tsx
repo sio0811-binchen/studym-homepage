@@ -14,7 +14,7 @@ interface FranchiseData {
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://study-manager-production-826b.up.railway.app';
-const ADMIN_PASSWORD = 'studym2025';
+const ADMIN_PASSWORD = 'studym001!';
 
 const SAMPLE_DATA: FranchiseData[] = [
     {

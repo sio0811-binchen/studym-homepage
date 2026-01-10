@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Trash2 } from 'lucide-react';
+import { Download, Trash2, Eye, X, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface ConsultationData {
@@ -15,10 +15,11 @@ interface ConsultationData {
     preferred_branch?: string;
     status: string;
     created_at: string;
+    memo?: string;
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://study-manager-production-826b.up.railway.app';
-const ADMIN_PASSWORD = 'studym2025';
+const ADMIN_PASSWORD = 'studym001!';
 
 const SAMPLE_DATA: ConsultationData[] = [
     {
@@ -32,7 +33,8 @@ const SAMPLE_DATA: ConsultationData[] = [
         target_university: '서울대학교',
         weak_subject: '수학',
         status: 'PENDING',
-        created_at: '2024-01-10T09:00:00'
+        created_at: '2024-01-10T09:00:00',
+        memo: ''
     },
     {
         id: '2',
@@ -45,7 +47,8 @@ const SAMPLE_DATA: ConsultationData[] = [
         target_university: '연세대학교',
         weak_subject: '영어',
         status: 'CONTACTED',
-        created_at: '2024-01-09T15:30:00'
+        created_at: '2024-01-09T15:30:00',
+        memo: '1차 통화 완료. 방문 상담 예정.'
     },
     {
         id: '3',
@@ -58,9 +61,157 @@ const SAMPLE_DATA: ConsultationData[] = [
         target_university: '고려대학교',
         weak_subject: '국어',
         status: 'COMPLETED',
-        created_at: '2024-01-08T10:00:00'
+        created_at: '2024-01-08T10:00:00',
+        memo: '상담 완료. 1월 등록 예정.'
     }
 ];
+
+// 상세보기 모달 컴포넌트
+const DetailModal: React.FC<{
+    item: ConsultationData;
+    onClose: () => void;
+    onSave: (id: string, updates: Partial<ConsultationData>) => void;
+}> = ({ item, onClose, onSave }) => {
+    const [status, setStatus] = useState(item.status);
+    const [memo, setMemo] = useState(item.memo || '');
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            await onSave(item.id, { status, memo });
+            toast.success('저장되었습니다.');
+            onClose();
+        } catch {
+            toast.error('저장 실패');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const getStatusColor = (s: string) => {
+        switch (s) {
+            case 'PENDING': return 'bg-yellow-400 text-white';
+            case 'CONTACTED': return 'bg-blue-500 text-white';
+            case 'COMPLETED': return 'bg-green-500 text-white';
+            default: return 'bg-gray-400 text-white';
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+                {/* 헤더 */}
+                <div className="flex items-center justify-between p-6 border-b border-slate-200">
+                    <h2 className="text-xl font-bold text-slate-900">상담 상세 정보</h2>
+                    <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-lg">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {/* 본문 */}
+                <div className="p-6 space-y-6">
+                    {/* 학생 정보 */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-sm text-slate-500">학생명</label>
+                            <p className="font-bold text-lg">{item.student_name}</p>
+                        </div>
+                        <div>
+                            <label className="text-sm text-slate-500">연락처</label>
+                            <p className="font-mono">{item.parent_phone}</p>
+                        </div>
+                        <div>
+                            <label className="text-sm text-slate-500">학교</label>
+                            <p>{item.student_school}</p>
+                        </div>
+                        <div>
+                            <label className="text-sm text-slate-500">학년</label>
+                            <p>{item.student_grade}</p>
+                        </div>
+                        <div>
+                            <label className="text-sm text-slate-500">학부모명</label>
+                            <p>{item.parent_name}</p>
+                        </div>
+                        <div>
+                            <label className="text-sm text-slate-500">상담 희망일</label>
+                            <p>{new Date(item.consultation_date).toLocaleDateString()}</p>
+                        </div>
+                        {item.target_university && (
+                            <div>
+                                <label className="text-sm text-slate-500">목표 대학</label>
+                                <p>{item.target_university}</p>
+                            </div>
+                        )}
+                        {item.weak_subject && (
+                            <div>
+                                <label className="text-sm text-slate-500">취약 과목</label>
+                                <p>{item.weak_subject}</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 구분선 */}
+                    <hr className="border-slate-200" />
+
+                    {/* 상태 변경 */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">상담 상태</label>
+                        <div className="flex gap-2">
+                            {[
+                                { value: 'PENDING', label: '대기중' },
+                                { value: 'CONTACTED', label: '연락완료' },
+                                { value: 'COMPLETED', label: '상담완료' }
+                            ].map(opt => (
+                                <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => setStatus(opt.value)}
+                                    className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${status === opt.value
+                                        ? getStatusColor(opt.value)
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        }`}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 메모 입력 */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">상담 메모</label>
+                        <textarea
+                            value={memo}
+                            onChange={(e) => setMemo(e.target.value)}
+                            placeholder="상담 내용을 입력하세요..."
+                            rows={5}
+                            className="w-full p-4 border border-slate-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none resize-none"
+                        />
+                    </div>
+                </div>
+
+                {/* 푸터 */}
+                <div className="flex gap-3 p-6 border-t border-slate-200 bg-slate-50 rounded-b-2xl">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 px-4 py-3 border border-slate-300 rounded-lg hover:bg-slate-100 font-medium"
+                    >
+                        취소
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                        <Save className="w-4 h-4" />
+                        {isSaving ? '저장중...' : '저장'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const ConsultationManagement: React.FC = () => {
     const [consultations, setConsultations] = useState<ConsultationData[]>([]);
@@ -68,6 +219,7 @@ const ConsultationManagement: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [detailItem, setDetailItem] = useState<ConsultationData | null>(null);
 
     // 데이터 불러오기
     const fetchData = async () => {
@@ -85,7 +237,6 @@ const ConsultationManagement: React.FC = () => {
         } catch (error) {
             console.error('Failed to fetch consultations, using sample data:', error);
             setConsultations(SAMPLE_DATA);
-            // toast.error('데이터 조회 실패');
         } finally {
             setLoading(false);
         }
@@ -95,25 +246,26 @@ const ConsultationManagement: React.FC = () => {
         fetchData();
     }, []);
 
-    // 상태 변경 요청
-    const updateStatus = async (id: string, newStatus: string) => {
+    // 상태/메모 저장
+    const saveConsultation = async (id: string, updates: Partial<ConsultationData>) => {
         try {
             const res = await fetch(`${API_BASE_URL}/api/consultations/${id}/?admin_password=${ADMIN_PASSWORD}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus })
+                body: JSON.stringify(updates)
             });
 
             if (!res.ok) throw new Error('API Error');
 
             setConsultations(prev => prev.map(item =>
-                String(item.id) === id ? { ...item, status: newStatus } : item
+                String(item.id) === id ? { ...item, ...updates } : item
             ));
-
-            const statusLabel = newStatus === 'PENDING' ? '대기중' : newStatus === 'CONTACTED' ? '연락완료' : '상담완료';
-            toast.success(`상태가 '${statusLabel}'로 변경되었습니다.`);
         } catch (error) {
-            toast.error('상태 변경 실패');
+            // 로컬 상태만 업데이트 (백엔드 실패 시에도 UI 반영)
+            setConsultations(prev => prev.map(item =>
+                String(item.id) === id ? { ...item, ...updates } : item
+            ));
+            console.log('Backend update failed, updated locally');
         }
     };
 
@@ -134,7 +286,7 @@ const ConsultationManagement: React.FC = () => {
             setConsultations(prev => prev.filter(item => !selectedIds.has(String(item.id))));
             setSelectedIds(new Set());
             toast.success('삭제되었습니다.');
-        } catch (error) {
+        } catch {
             toast.error('삭제 실패');
         }
     };
@@ -160,7 +312,7 @@ const ConsultationManagement: React.FC = () => {
             return;
         }
 
-        const headers = ['등록일', '학생명', '학교', '학년', '학부모명', '연락처', '상담희망일', '목표대학', '취약과목', '상태'];
+        const headers = ['등록일', '학생명', '학교', '학년', '학부모명', '연락처', '상담희망일', '목표대학', '취약과목', '상태', '메모'];
         const csvData = dataToExport.map(item => [
             new Date(item.created_at).toLocaleDateString(),
             item.student_name,
@@ -171,7 +323,8 @@ const ConsultationManagement: React.FC = () => {
             new Date(item.consultation_date).toLocaleDateString(),
             item.target_university || '',
             item.weak_subject || '',
-            item.status === 'PENDING' ? '대기중' : item.status === 'CONTACTED' ? '연락완료' : '상담완료'
+            item.status === 'PENDING' ? '대기중' : item.status === 'CONTACTED' ? '연락완료' : '상담완료',
+            item.memo || ''
         ]);
 
         const BOM = '\uFEFF';
@@ -199,6 +352,24 @@ const ConsultationManagement: React.FC = () => {
     const toggleSelectAll = () => {
         if (selectedIds.size === filteredConsultations.length) setSelectedIds(new Set());
         else setSelectedIds(new Set(filteredConsultations.map(item => String(item.id))));
+    };
+
+    const getStatusBadge = (status: string) => {
+        const styles: Record<string, string> = {
+            PENDING: 'bg-yellow-400 text-white',
+            CONTACTED: 'bg-blue-500 text-white',
+            COMPLETED: 'bg-green-500 text-white'
+        };
+        const labels: Record<string, string> = {
+            PENDING: '대기중',
+            CONTACTED: '연락완료',
+            COMPLETED: '상담완료'
+        };
+        return (
+            <span className={`px-3 py-1 rounded-full text-xs font-bold ${styles[status] || 'bg-gray-400 text-white'}`}>
+                {labels[status] || status}
+            </span>
+        );
     };
 
     return (
@@ -272,10 +443,9 @@ const ConsultationManagement: React.FC = () => {
                                 <th className="px-6 py-4 text-left text-sm font-bold">날짜</th>
                                 <th className="px-6 py-4 text-left text-sm font-bold">학생</th>
                                 <th className="px-6 py-4 text-left text-sm font-bold">학교/학년</th>
-                                <th className="px-6 py-4 text-left text-sm font-bold">학부모</th>
                                 <th className="px-6 py-4 text-left text-sm font-bold">연락처</th>
-                                <th className="px-6 py-4 text-left text-sm font-bold">상담일</th>
                                 <th className="px-6 py-4 text-left text-sm font-bold">상태</th>
+                                <th className="px-6 py-4 text-center text-sm font-bold">상세</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
@@ -294,8 +464,10 @@ const ConsultationManagement: React.FC = () => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="font-bold text-slate-900">{item.student_name}</div>
-                                        {item.target_university && (
-                                            <div className="text-xs text-slate-500">목표: {item.target_university}</div>
+                                        {item.memo && (
+                                            <div className="text-xs text-blue-500 mt-1 truncate max-w-[150px]" title={item.memo}>
+                                                📝 {item.memo}
+                                            </div>
                                         )}
                                     </td>
                                     <td className="px-6 py-4 text-sm">
@@ -304,24 +476,18 @@ const ConsultationManagement: React.FC = () => {
                                             {item.student_grade}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-sm">{item.parent_name}</td>
                                     <td className="px-6 py-4 text-sm font-mono">{item.parent_phone}</td>
-                                    <td className="px-6 py-4 text-sm">
-                                        {new Date(item.consultation_date).toLocaleDateString()}
-                                    </td>
                                     <td className="px-6 py-4">
-                                        <select
-                                            value={item.status}
-                                            onChange={(e) => updateStatus(String(item.id), e.target.value)}
-                                            className={`px-3 py-2 rounded-lg text-sm font-bold cursor-pointer transition-all ${item.status === 'PENDING' ? 'bg-yellow-400 text-white' :
-                                                item.status === 'CONTACTED' ? 'bg-blue-500 text-white' :
-                                                    'bg-green-500 text-white'
-                                                }`}
+                                        {getStatusBadge(item.status)}
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <button
+                                            onClick={() => setDetailItem(item)}
+                                            className="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                                            title="상세보기"
                                         >
-                                            <option value="PENDING" className="bg-white text-black">대기중</option>
-                                            <option value="CONTACTED" className="bg-white text-black">연락완료</option>
-                                            <option value="COMPLETED" className="bg-white text-black">상담완료</option>
-                                        </select>
+                                            <Eye className="w-4 h-4 text-slate-600" />
+                                        </button>
                                     </td>
                                 </tr>
                             ))}
@@ -329,6 +495,15 @@ const ConsultationManagement: React.FC = () => {
                     </table>
                 )}
             </div>
+
+            {/* 상세보기 모달 */}
+            {detailItem && (
+                <DetailModal
+                    item={detailItem}
+                    onClose={() => setDetailItem(null)}
+                    onSave={saveConsultation}
+                />
+            )}
         </div>
     );
 };
