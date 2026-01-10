@@ -9,7 +9,7 @@ import CryptoJS from 'crypto-js';
 
 const SOLAPI_API_KEY = import.meta.env.VITE_SOLAPI_API_KEY || '';
 const SOLAPI_API_SECRET = import.meta.env.VITE_SOLAPI_API_SECRET || '';
-const SENDER_NUMBER = '0313877303'; // 발신번호 고정
+const SENDER_NUMBER = '01098051011'; // 발신번호 (관리자 핸드폰)
 
 /**
  * Solapi API 인증 헤더 생성

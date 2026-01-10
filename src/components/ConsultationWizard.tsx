@@ -7,7 +7,6 @@ import { Check, ChevronRight } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { logConsultationSubmit } from '../utils/analytics';
 import { formatPhoneNumber } from '../utils/formatPhone';
-import { sendAligoSMS } from '../utils/sms';
 
 type FormData = {
     studentName: string;
@@ -89,14 +88,8 @@ const ConsultationWizard = () => {
             setIsSubmittingMock(false);
             logConsultationSubmit(true);
 
-            // Send SMS Notification to Admin
-            try {
-                const contact = isGeneral ? "학생 본인" : data.parentPhone;
-                const msg = `[StudyM 상담신청]\n이름: ${data.studentName}\n학교: ${data.studentSchool}\n학년: ${data.studentGrade}\n연락처: ${contact}\n희망일: ${data.consultationDate ? data.consultationDate.toLocaleDateString() : '미정'}`;
-                await sendAligoSMS(import.meta.env.VITE_ADMIN_PHONE, msg);
-            } catch (smsErr) {
-                console.error('Failed to send Admin SMS:', smsErr);
-            }
+            // SMS 알림은 백엔드에서 처리됨 (ConsultationRequestViewSet.perform_create)
+            // 프론트엔드에서 직접 SMS API 호출 시 CORS 에러 발생하므로 제거
         } catch (error) {
             console.error('Submission error:', error);
             toast.error('상담 신청 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.', {
