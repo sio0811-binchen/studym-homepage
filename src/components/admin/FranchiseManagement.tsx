@@ -19,33 +19,7 @@ interface FranchiseData {
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://studym-homepage-production-a3c2.up.railway.app';
 const ADMIN_PASSWORD = 'studym001!';
 
-const SAMPLE_DATA: FranchiseData[] = [
-    {
-        id: '1',
-        applicant_name: '홍길동',
-        phone: '010-1111-2222',
-        email: 'hong@example.com',
-        region: '서울 강남구',
-        budget: '1억 이상',
-        has_property: false,
-        status: 'NEW',
-        lead_grade: 'HOT',
-        created_at: '2024-01-14T10:00:00',
-        memo: ''
-    },
-    {
-        id: '2',
-        applicant_name: '장보고',
-        phone: '010-3333-4444',
-        region: '부산 해운대구',
-        budget: '5천만원 ~ 1억',
-        has_property: true,
-        status: 'CONTACTED',
-        lead_grade: 'WARM',
-        created_at: '2024-01-12T14:30:00',
-        memo: '1차 상담 완료'
-    }
-];
+const SAMPLE_DATA: FranchiseData[] = []; // 샘플 데이터 제거됨
 
 // 상세보기 모달 컴포넌트
 const DetailModal: React.FC<{

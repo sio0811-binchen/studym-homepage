@@ -21,50 +21,7 @@ interface ConsultationData {
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://studym-homepage-production-a3c2.up.railway.app';
 const ADMIN_PASSWORD = 'studym001!';
 
-const SAMPLE_DATA: ConsultationData[] = [
-    {
-        id: '1',
-        student_name: '김철수',
-        student_school: '서울고등학교',
-        student_grade: '고2',
-        parent_name: '김부모',
-        parent_phone: '010-1234-5678',
-        consultation_date: '2024-01-15T10:00:00',
-        target_university: '서울대학교',
-        weak_subject: '수학',
-        status: 'PENDING',
-        created_at: '2024-01-10T09:00:00',
-        memo: ''
-    },
-    {
-        id: '2',
-        student_name: '이영희',
-        student_school: '경기여자고등학교',
-        student_grade: '고3',
-        parent_name: '이모친',
-        parent_phone: '010-9876-5432',
-        consultation_date: '2024-01-16T14:00:00',
-        target_university: '연세대학교',
-        weak_subject: '영어',
-        status: 'CONTACTED',
-        created_at: '2024-01-09T15:30:00',
-        memo: '1차 통화 완료. 방문 상담 예정.'
-    },
-    {
-        id: '3',
-        student_name: '박지성',
-        student_school: '수원고등학교',
-        student_grade: '고1',
-        parent_name: '박부친',
-        parent_phone: '010-5555-5555',
-        consultation_date: '2024-01-20T11:00:00',
-        target_university: '고려대학교',
-        weak_subject: '국어',
-        status: 'COMPLETED',
-        created_at: '2024-01-08T10:00:00',
-        memo: '상담 완료. 1월 등록 예정.'
-    }
-];
+const SAMPLE_DATA: ConsultationData[] = []; // 샘플 데이터 제거됨
 
 // 상세보기 모달 컴포넌트
 const DetailModal: React.FC<{
