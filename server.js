@@ -202,11 +202,11 @@ app.get('/api/health', (req, res) => {
 
 // ========== Static File Serving ==========
 // dist 폴더의 정적 파일 서빙 (Vite 빌드 결과물)
-app.use(express.static(path.join(__dirname, '..', 'dist')));
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // SPA fallback - 모든 경로를 index.html로 리다이렉트
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 // ========== Server Start ==========

@@ -228,7 +228,7 @@ const ConsultationWizard = () => {
                                         selected={field.value}
                                         onChange={(date) => field.onChange(date)}
                                         inline
-                                        minDate={new Date()}
+                                        minDate={(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; })()}
                                         calendarClassName="!border-0 !font-sans !rounded-xl !shadow-none"
                                     />
                                 )}
