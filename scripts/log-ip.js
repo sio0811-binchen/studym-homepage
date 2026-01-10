@@ -1,5 +1,5 @@
 // Log Railway server IP before starting the app
-const axios = require('axios');
+import axios from 'axios';
 
 axios.get('https://api.ipify.org?format=json')
     .then(response => {
