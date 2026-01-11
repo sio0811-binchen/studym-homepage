@@ -14,6 +14,7 @@ type FormData = {
     studentGrade: string;
     parentName: string;
     parentPhone: string;
+    consultationType: 'VISIT' | 'PHONE';
     consultationDate: Date;
 };
 
@@ -46,7 +47,8 @@ const ConsultationWizard = () => {
                 student_grade: data.studentGrade,
                 parent_name: isGeneral ? data.studentName : data.parentName,
                 parent_phone: isGeneral ? '' : data.parentPhone,
-                consultation_date: data.consultationDate ? data.consultationDate.toISOString() : new Date().toISOString(),
+                consultation_type: data.consultationType || 'PHONE',
+                consultation_date: data.consultationType === 'VISIT' && data.consultationDate ? data.consultationDate.toISOString() : null,
                 status: 'PENDING',
                 created_at: new Date().toISOString()
             };
@@ -215,38 +217,81 @@ const ConsultationWizard = () => {
                                 </div>
                             </>
                         )}
-                        {isGeneral && (
-                            <h3 className="text-2xl font-bold text-brand-navy mb-8">상담 일시를 선택해주세요.</h3>
-                        )}
-                        <div className="flex justify-center mb-6">
-                            <Controller
-                                control={control}
-                                name="consultationDate"
-                                rules={{ required: true }}
-                                render={({ field }) => (
-                                    <DatePicker
-                                        selected={field.value}
-                                        onChange={(date) => field.onChange(date)}
-                                        inline
-                                        showTimeSelect
-                                        timeFormat="HH:mm"
-                                        timeIntervals={30}
-                                        timeCaption="시간"
-                                        minTime={new Date(0, 0, 0, 10, 0)}
-                                        maxTime={new Date(0, 0, 0, 22, 0)}
-                                        dateFormat="yyyy.MM.dd aa h:mm"
-                                        minDate={(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; })()}
-                                        calendarClassName="!border-0 !font-sans !rounded-xl !shadow-none"
+
+                        <div className="pt-6">
+                            <h3 className="text-2xl font-bold text-brand-navy mb-6">상담 방식을 선택해주세요.</h3>
+                            <div className="grid grid-cols-2 gap-4 mb-8">
+                                <label className={`cursor-pointer p-4 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${watch("consultationType") === 'VISIT' ? 'border-brand-navy bg-brand-navy/5 text-brand-navy' : 'border-slate-100 hover:border-slate-200'}`}>
+                                    <input
+                                        type="radio"
+                                        value="VISIT"
+                                        {...register("consultationType", { required: true })}
+                                        className="hidden"
                                     />
-                                )}
-                            />
+                                    <span className="font-bold text-lg">방문 상담</span>
+                                    <span className="text-xs text-slate-500">학원에서 직접 상담</span>
+                                </label>
+                                <label className={`cursor-pointer p-4 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${watch("consultationType") === 'PHONE' ? 'border-brand-navy bg-brand-navy/5 text-brand-navy' : 'border-slate-100 hover:border-slate-200'}`}>
+                                    <input
+                                        type="radio"
+                                        value="PHONE"
+                                        {...register("consultationType", { required: true })}
+                                        className="hidden"
+                                    />
+                                    <span className="font-bold text-lg">전화 상담</span>
+                                    <span className="text-xs text-slate-500">통화로 간편하게 상담</span>
+                                </label>
+                            </div>
                         </div>
+
+                        {watch("consultationType") === 'VISIT' && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                className="overflow-hidden"
+                            >
+                                <h3 className="text-xl font-bold text-brand-navy mb-4">방문 희망 일시를 선택해주세요.</h3>
+                                <div className="flex justify-center mb-6">
+                                    <Controller
+                                        control={control}
+                                        name="consultationDate"
+                                        rules={{ required: watch("consultationType") === 'VISIT' }}
+                                        render={({ field }) => (
+                                            <DatePicker
+                                                selected={field.value}
+                                                onChange={(date) => field.onChange(date)}
+                                                inline
+                                                showTimeSelect
+                                                timeFormat="HH:mm"
+                                                timeIntervals={30}
+                                                timeCaption="시간"
+                                                minTime={new Date(0, 0, 0, 10, 0)}
+                                                maxTime={new Date(0, 0, 0, 22, 0)}
+                                                dateFormat="yyyy.MM.dd aa h:mm"
+                                                minDate={(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; })()}
+                                                calendarClassName="!border-0 !font-sans !rounded-xl !shadow-none"
+                                            />
+                                        )}
+                                    />
+                                </div>
+                            </motion.div>
+                        )}
+
                         <button
                             type="submit"
-                            disabled={isSubmittingMock || (!isGeneral && (!watch("parentName") || !watch("parentPhone"))) || !watch("consultationDate")}
+                            disabled={
+                                isSubmittingMock ||
+                                (!isGeneral && (!watch("parentName") || !watch("parentPhone"))) ||
+                                !watch("consultationType") ||
+                                (watch("consultationType") === 'VISIT' && !watch("consultationDate"))
+                            }
                             className="w-full py-4 bg-brand-gold text-brand-navy rounded-xl font-bold text-lg hover:bg-yellow-500 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {isSubmittingMock ? '처리중...' : (!watch("consultationDate") ? '위에서 상담 일시를 선택해주세요' : '상담 신청 완료하기')}
+                            {isSubmittingMock ? '처리중...' :
+                                (!watch("consultationType") ? '상담 방식을 선택해주세요' :
+                                    (watch("consultationType") === 'VISIT' && !watch("consultationDate") ? '방문 일시를 선택해주세요' : '상담 신청 완료하기')
+                                )
+                            }
                         </button>
                     </div>
                 );
