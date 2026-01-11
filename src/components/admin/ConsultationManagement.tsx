@@ -18,7 +18,7 @@ interface ConsultationData {
     memo?: string;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://studym-homepage-production-a3c2.up.railway.app';
+const API_BASE_URL = import.meta.env.VITE_API_URL || ''; // 상대 경로 사용 (Vite Proxy 또는 배포 환경 따름)
 const ADMIN_PASSWORD = 'studym001!';
 
 const SAMPLE_DATA: ConsultationData[] = []; // 샘플 데이터 제거됨
@@ -194,8 +194,8 @@ const ConsultationManagement: React.FC = () => {
                 setConsultations(SAMPLE_DATA);
             }
         } catch (error) {
-            console.error('Failed to fetch consultations, using sample data:', error);
-            setConsultations(SAMPLE_DATA);
+            console.error('Failed to fetch consultations:', error);
+            toast.error('데이터를 불러오지 못했습니다.');
         } finally {
             setLoading(false);
         }
@@ -220,11 +220,9 @@ const ConsultationManagement: React.FC = () => {
                 String(item.id) === id ? { ...item, ...updates } : item
             ));
         } catch (error) {
-            // 로컬 상태만 업데이트 (백엔드 실패 시에도 UI 반영)
-            setConsultations(prev => prev.map(item =>
-                String(item.id) === id ? { ...item, ...updates } : item
-            ));
-            console.log('Backend update failed, updated locally');
+            console.error('Update failed:', error);
+            toast.error('저장에 실패했습니다.');
+            // Revert or re-fetch logic could be here, but for now just notify error.
         }
     };
 

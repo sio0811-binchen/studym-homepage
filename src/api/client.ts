@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const client = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'https://studym-homepage-production-a3c2.up.railway.app',
+    baseURL: import.meta.env.VITE_API_URL || '', // Use relative path to leverage Vite proxy
 });
 
 // Add a request interceptor (Optional logging)
