@@ -27,6 +27,7 @@ export interface Payment {
         expires_at: string;
     };
     receipt_url?: string; // 영수증 URL
+    payment_key?: string; // 결제 키 (엑셀 다운로드용)
 }
 
 export interface PaymentCreateData {

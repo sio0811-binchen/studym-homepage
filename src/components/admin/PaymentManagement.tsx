@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { sendAligoSMS } from '../../utils/sms';
 import { formatPhoneOnInput, extractDigits } from '../../utils/phoneFormat';
+import * as XLSX from 'xlsx';
 
 // 기본 금액 550,000원
 const BASE_MONTHLY_PRICE = 550000;
@@ -204,6 +205,31 @@ const PaymentManagement: React.FC = () => {
         }
     };
 
+    const handleExportExcel = () => {
+        if (filteredPayments.length === 0) {
+            alert('다운로드할 데이터가 없습니다.');
+            return;
+        }
+
+        const excelData = filteredPayments.map(p => ({
+            '날짜': new Date(p.created_at).toLocaleDateString(),
+            '학생': p.student_name,
+            '연락처': p.student_phone,
+            '상품': p.product_type_display || p.product_type,
+            '금액': p.amount,
+            '상태': p.status === 'PAID' ? '결제완료' : p.status === 'PENDING' ? '대기중' : p.status === 'CANCELED' ? '취소됨' : p.status,
+            '취소금액': p.canceled_amount || 0,
+            '남은금액': (p.amount || 0) - (p.canceled_amount || 0),
+            '결제키': p.payment_key || '',
+            '주문ID': p.order_id || ''
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(excelData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "결제내역");
+        XLSX.writeFile(wb, `결제내역_${startDate}~${endDate}.xlsx`);
+    };
+
     return (
         <div className="space-y-6">
             {/* Statistics Cards */}
@@ -274,7 +300,14 @@ const PaymentManagement: React.FC = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+                <button
+                    onClick={handleExportExcel}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                    <div className="w-5 h-5 flex items-center justify-center font-bold border-2 border-white rounded text-[10px]">X</div>
+                    엑셀 다운로드
+                </button>
                 <button
                     onClick={() => setShowCreateModal(true)}
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -398,10 +431,11 @@ const PaymentManagement: React.FC = () => {
                                                                 deleteMutation.mutate(payment.id);
                                                             }
                                                         }}
-                                                        className="p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 rounded"
+                                                        className="p-1.5 text-red-500 hover:bg-red-50 hover:text-red-700 rounded flex items-center gap-1"
                                                         title="삭제"
                                                     >
                                                         <Trash2 className="h-4 w-4" />
+                                                        <span className="text-xs font-bold">삭제</span>
                                                     </button>
                                                 </>
                                             )}
@@ -432,10 +466,11 @@ const PaymentManagement: React.FC = () => {
                                                                 deleteMutation.mutate(payment.id);
                                                             }
                                                         }}
-                                                        className="p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 rounded"
+                                                        className="p-1.5 text-red-500 hover:bg-red-50 hover:text-red-700 rounded flex items-center gap-1"
                                                         title="삭제"
                                                     >
                                                         <Trash2 className="h-4 w-4" />
+                                                        <span className="text-xs font-bold">삭제</span>
                                                     </button>
                                                 </>
                                             )}
