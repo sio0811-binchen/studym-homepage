@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { Analytics } from '@vercel/analytics/react';
 import { initGA, logPageView } from './utils/analytics';
 
 // Existing Pages
@@ -92,7 +91,6 @@ function App() {
             <Route path="/pay/:token/fail" element={<PaymentFailPage />} />
           </Routes>
         </BrowserRouter>
-        <Analytics />
       </ErrorBoundary>
     </>
   );
