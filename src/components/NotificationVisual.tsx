@@ -67,7 +67,7 @@ const NotificationVisual = () => {
             {/* Notification List */}
             <div className="space-y-4">
                 <AnimatePresence mode="popLayout">
-                    {visibleNotifications.map((noti) => (
+                    {visibleNotifications.filter(n => n && n.type).map((noti) => (
                         <motion.div
                             key={noti.id}
                             initial={{ opacity: 0, x: 50, scale: 0.9 }}
@@ -75,8 +75,8 @@ const NotificationVisual = () => {
                             exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
                             layout
                             className={`p-4 rounded-xl border backdrop-blur-md shadow-lg ${noti.type === 'warning'
-                                    ? 'bg-red-500/10 border-red-500/30'
-                                    : 'bg-slate-800/80 border-slate-700'
+                                ? 'bg-red-500/10 border-red-500/30'
+                                : 'bg-slate-800/80 border-slate-700'
                                 }`}
                         >
                             <div className="flex gap-3">
