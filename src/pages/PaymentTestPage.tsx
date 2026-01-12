@@ -3,7 +3,7 @@
  * URL: /pay/test
  */
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
 import { CreditCard, Loader2 } from 'lucide-react';
 import { formatPhoneOnInput } from '../utils/phoneFormat';
 
@@ -12,7 +12,7 @@ const API_BASE = '';
 const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY || 'test_ck_ex6BJGQOVDvLA4OAxpya8W4w2zNb';
 
 const PaymentTestPage = () => {
-    const navigate = useNavigate();
+    // const navigate = useNavigate(); // Removed unused variable
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         student_name: '심사담당자',
