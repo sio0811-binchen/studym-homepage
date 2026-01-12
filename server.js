@@ -11,6 +11,7 @@ import CryptoJS from 'crypto-js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import pg from 'pg';
+import compression from 'compression';
 
 const { Pool } = pg;
 
@@ -18,6 +19,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+app.use(compression()); // Gzip 압축 적용
 const PORT = process.env.PORT || 3000;
 
 // Solapi API 설정
