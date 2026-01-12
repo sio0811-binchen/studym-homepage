@@ -12,7 +12,7 @@ const Footer = () => {
         legal: [
             { label: '이용약관', href: '/manual' },
             { label: '개인정보처리방침', href: '/privacy' },
-            { label: '환불 정책', href: '/manual' },
+            { label: '환불 정책', href: '/manual#refund' },
         ],
         contact: [
             { label: '전화', text: '031-387-7303' },
@@ -20,6 +20,7 @@ const Footer = () => {
             { label: '회사명', text: '주식회사 스터디엠' },
             { label: '대표이사', text: '박윤완' },
             { label: '사업자번호', text: '682-88-03603' },
+            { label: '통신판매업신고', text: '2024-경기안양-0000 (예정)' },
         ],
     };
 

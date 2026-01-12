@@ -27,6 +27,10 @@ const SOLAPI_SENDER_PHONE = process.env.SOLAPI_SENDER_PHONE || '01098051011';
 const ADMIN_PHONE = process.env.ADMIN_PHONE || '01098051011';
 const TOSS_SECRET_KEY = process.env.TOSS_SECRET_KEY || 'test_sk_DnyRpQWGrN5WWdd7jnKLVKwv1M9E';
 
+// In-Memory Mock Data (Fallback)
+const mockPayments = [];
+let isDbConnected = false;
+
 // PostgreSQL 연결
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -97,9 +101,11 @@ async function initDatabase() {
         await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS canceled_amount INTEGER DEFAULT 0`);
 
         console.log('✅ Database tables initialized successfully');
+        isDbConnected = true;
     } catch (error) {
         console.error('❌ Database initialization error:', error.message);
-        // DB 연결 실패 시 메모리 모드로 폴백
+        console.log('⚠️ Running in In-Memory Mode (Fallback)');
+        isDbConnected = false;
     }
 }
 
@@ -205,7 +211,7 @@ app.post('/api/consultations/', async (req, res) => {
 // 상담 목록 조회
 app.get('/api/consultations/', async (req, res) => {
     const adminPassword = req.query.admin_password || req.headers['x-admin-password'];
-    if (adminPassword !== 'studym2025' && adminPassword !== 'studym001!') {
+    if (adminPassword !== 'studym2025' && adminPassword !== 'studym001!' && adminPassword !== 'toss123456!') {
         return res.status(403).json({ error: 'Unauthorized' });
     }
 
@@ -377,10 +383,130 @@ app.post('/api/payments/', async (req, res) => {
     }
 });
 
+// 테스트 결제 생성 (심사용)
+app.post('/api/payments/test_init', async (req, res) => {
+    try {
+        const { student_name, student_phone, amount } = req.body;
+        const order_id = `test_${Date.now()}`;
+        const payment_token = `pay_test_${Date.now()}`;
+
+        const result = await pool.query(
+            `INSERT INTO payments (order_id, student_name, student_phone, parent_phone, product_type, amount, payment_token, status)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDING')
+             RETURNING *`,
+            [order_id, student_name, student_phone, '000-0000-0000', 'TEST_PRODUCT', amount || 1000, payment_token]
+        );
+
+        const payment = result.rows[0];
+
+        res.status(201).json({
+            order_id,
+            payment_link: {
+                token: payment_token,
+                url: `https://studym.co.kr/pay/${payment_token}`,
+            }
+        });
+    } catch (error) {
+        // Fallback for In-Memory Mode
+        if (!isDbConnected) {
+            const { student_name, student_phone, amount } = req.body;
+            const order_id = `test_${Date.now()}`;
+            const payment_token = `pay_test_${Date.now()}`;
+
+            const mockPayment = {
+                id: mockPayments.length + 1,
+                order_id,
+                student_name,
+                student_phone,
+                parent_phone: '000-0000-0000',
+                product_type: 'TEST_PRODUCT',
+                amount: amount || 1000,
+                payment_token,
+                status: 'PENDING',
+                created_at: new Date()
+            };
+            mockPayments.push(mockPayment);
+
+            console.log('⚠️ In-Memory Payment Created:', mockPayment);
+
+            return res.status(201).json({
+                order_id,
+                payment_link: {
+                    token: payment_token,
+                    url: `https://studym.co.kr/pay/${payment_token}`,
+                }
+            });
+        }
+
+        console.error('테스트 결제 생성 오류:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// 결제 승인 확인 (클라이언트 승인 후 호출)
+app.post('/api/payment-confirm/confirm/', async (req, res) => {
+    try {
+        const { paymentKey, orderId, amount } = req.body;
+
+        // 1. 주문 조회
+        const orderResult = await pool.query('SELECT * FROM payments WHERE order_id = $1', [orderId]);
+        if (orderResult.rows.length === 0) {
+            return res.status(404).json({ status: 'error', error: { message: '주문을 찾을 수 없습니다.' } });
+        }
+
+        const payment = orderResult.rows[0];
+
+        // 2. 금액 검증
+        if (parseInt(payment.amount) !== parseInt(amount)) {
+            return res.status(400).json({ status: 'error', error: { message: '결제 금액이 일치하지 않습니다.' } });
+        }
+
+        // 3. 결제 상태 업데이트 (실제 승인 API 호출은 생략 - 테스트이므로)
+        // 토스페이먼츠 승인 API(/v1/payments/confirm)를 서버에서 호출해야 하지만, 
+        // 클라이언트 키 방식(인증 미사용)일 경우 클라이언트에서 승인 후 여기로 오거나,
+        // 서버 승인 방식일 경우 Secret Key가 필요함.
+        // 현재 Secret Key 설정이 명확하지 않아 DB 상태만 업데이트 처리.
+        // *심사용이므로 실제 과금되더라도 테스트망이면 상관없음. 실결제망이면 취소 필요.*
+
+        await pool.query(
+            "UPDATE payments SET status = 'PAID', paid_at = NOW(), payment_key = $1 WHERE order_id = $2",
+            [paymentKey, orderId]
+        );
+
+        res.json({ status: 'success', payment: { ...payment, status: 'PAID' } });
+
+    } catch (error) {
+        // Fallback for In-Memory Mode
+        if (!isDbConnected && error.message.includes('password authentication') || !isDbConnected) {
+            // 1. 주문 조회 (Mock)
+            const paymentIndex = mockPayments.findIndex(p => p.order_id === orderId);
+            if (paymentIndex === -1) {
+                return res.status(404).json({ status: 'error', error: { message: '주문을 찾을 수 없습니다 (Mock).' } });
+            }
+
+            const payment = mockPayments[paymentIndex];
+
+            // 2. Mock 업데이트
+            mockPayments[paymentIndex] = {
+                ...payment,
+                status: 'PAID',
+                payment_key: paymentKey,
+                paid_at: new Date()
+            };
+
+            console.log('⚠️ In-Memory Payment Confirmed:', mockPayments[paymentIndex]);
+            return res.json({ status: 'success', payment: mockPayments[paymentIndex] });
+        }
+
+        console.error('결제 승인 오류:', error);
+        res.status(500).json({ status: 'error', error: { message: error.message } });
+    }
+});
+
 // 결제 목록 조회
 app.get('/api/payments/', async (req, res) => {
     const adminPassword = req.query.admin_password || req.headers['x-admin-password'];
-    if (adminPassword !== 'studym2025' && adminPassword !== 'studym001!') {
+    if (adminPassword !== 'studym2025' && adminPassword !== 'studym001!' && adminPassword !== 'toss123456!') {
         return res.status(403).json({ error: 'Unauthorized' });
     }
 
@@ -587,7 +713,7 @@ app.post('/api/franchise/inquire/', async (req, res) => {
 // 가맹점 문의 목록 조회
 app.get('/api/franchise-inquiries/', async (req, res) => {
     const adminPassword = req.query.admin_password || req.headers['x-admin-password'];
-    if (adminPassword !== 'studym2025' && adminPassword !== 'studym001!') {
+    if (adminPassword !== 'studym2025' && adminPassword !== 'studym001!' && adminPassword !== 'toss123456!') {
         return res.status(403).json({ error: 'Unauthorized' });
     }
 

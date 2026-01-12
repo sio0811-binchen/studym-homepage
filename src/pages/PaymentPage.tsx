@@ -7,7 +7,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { CreditCard, CheckCircle, XCircle, Loader2, AlertCircle } from 'lucide-react';
 
 // API Base URL
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://studym-homepage-production-a3c2.up.railway.app';
+const API_BASE = '';
 const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY || 'test_ck_ex6BJGQOVDvLA4OAxpya8W4w2zNb';
 
 

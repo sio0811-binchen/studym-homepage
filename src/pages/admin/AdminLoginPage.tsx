@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Lock, LogIn } from 'lucide-react';
 
 const AdminLoginPage: React.FC = () => {
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
@@ -18,13 +19,24 @@ const AdminLoginPage: React.FC = () => {
         e.preventDefault();
         setError('');
 
-        // 비밀번호 인증
-        if (password === 'studym001!') {
+        // 1. 관리자 계정 (admin / studym001!)
+        if (username === 'admin' && password === 'studym001!') {
             localStorage.setItem('adminAuthenticated', 'true');
+            // API 호출 시 사용할 패스워드 저장 (API Client가 x-admin-password 헤더로 전송)
+            localStorage.setItem('adminPassword', password); // 현재 입력된 패스워드를 저장
             navigate('/admin/dashboard');
-        } else {
-            setError('비밀번호가 올바르지 않습니다.');
+            return;
         }
+
+        // 2. 심사용 계정 (toss-test / toss123456!) - 심사 후 삭제 예정
+        if (username === 'toss-test' && password === 'toss123456!') {
+            localStorage.setItem('adminAuthenticated', 'true');
+            localStorage.setItem('adminPassword', password);
+            navigate('/admin/dashboard');
+            return;
+        }
+
+        setError('아이디 또는 비밀번호가 올바르지 않습니다.');
     };
 
     return (
@@ -50,6 +62,27 @@ const AdminLoginPage: React.FC = () => {
 
                         <form onSubmit={handleLogin} className="space-y-6">
                             <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="username">
+                                    관리자 아이디
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                                        <LogIn className="w-5 h-5 text-gray-400" />
+                                    </div>
+                                    <input
+                                        id="username"
+                                        type="text"
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        placeholder="아이디를 입력하세요"
+                                        className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                                        required
+                                        autoFocus
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="password">
                                     관리자 비밀번호
                                 </label>
@@ -65,7 +98,6 @@ const AdminLoginPage: React.FC = () => {
                                         placeholder="비밀번호를 입력하세요"
                                         className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
                                         required
-                                        autoFocus
                                     />
                                 </div>
                             </div>

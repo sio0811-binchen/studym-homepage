@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Clock, CheckCircle, TrendingUp, ArrowRight } from 'lucide-react';
+import Navbar from '../components/layout/Navbar';
+import Footer from '../components/layout/Footer';
 
 const StandardPage = () => {
     const navigate = useNavigate();
@@ -20,6 +22,7 @@ const StandardPage = () => {
 
     return (
         <div className="min-h-screen bg-white">
+            <Navbar />
             {/* Hero Section */}
             <section className="relative bg-gradient-to-br from-brand-navy to-slate-900 text-white py-32 overflow-hidden">
                 <div className="absolute inset-0 opacity-10"
@@ -170,6 +173,8 @@ const StandardPage = () => {
                     </motion.div>
                 </div>
             </section>
+
+            <Footer />
         </div>
     );
 };

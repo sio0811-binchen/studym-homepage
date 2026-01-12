@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Eye, User } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
+import Footer from '../components/layout/Footer';
 
 const EducationColumn = () => {
     const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -183,6 +184,8 @@ const EducationColumn = () => {
                     </motion.div>
                 </div>
             </section>
+
+            <Footer />
         </div>
     );
 };

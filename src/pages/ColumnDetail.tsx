@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Calendar, Eye, ArrowLeft, Tag } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Navbar from '../components/layout/Navbar';
+import Footer from '../components/layout/Footer';
 
 interface Article {
     id: string;
@@ -270,6 +271,8 @@ const ColumnDetail = () => {
                     </div>
                 </section>
             )}
+
+            <Footer />
         </div>
     );
 };

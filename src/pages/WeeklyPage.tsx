@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Target, LineChart, Users, ArrowRight, AlertCircle } from 'lucide-react';
+import Navbar from '../components/layout/Navbar';
+import Footer from '../components/layout/Footer';
 
 const WeeklyPage = () => {
     const navigate = useNavigate();
@@ -14,6 +16,7 @@ const WeeklyPage = () => {
 
     return (
         <div className="min-h-screen bg-white">
+            <Navbar />
             {/* Hero Section */}
             <section className="relative bg-gradient-to-br from-brand-navy via-slate-900 to-brand-navy text-white py-32 overflow-hidden">
                 <div className="absolute inset-0 opacity-10"
@@ -180,6 +183,8 @@ const WeeklyPage = () => {
                     </motion.div>
                 </div>
             </section>
+
+            <Footer />
         </div>
     );
 };

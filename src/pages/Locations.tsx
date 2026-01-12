@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion';
 import { MapPin, Phone, Users, Award } from 'lucide-react';
+import Navbar from '../components/layout/Navbar';
+import Footer from '../components/layout/Footer';
 
 interface Location {
     id: number;
@@ -53,6 +55,7 @@ const LocationsPage = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-white to-slate-50 pt-20">
+            <Navbar />
             {/* Header */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                 <motion.div
@@ -174,6 +177,8 @@ const LocationsPage = () => {
                     </motion.a>
                 </motion.div>
             </section>
+
+            <Footer />
         </div>
     );
 };

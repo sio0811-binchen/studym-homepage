@@ -205,6 +205,7 @@ const OperationManual = () => {
 
                     {/* Section 2: 환불 규정 */}
                     <motion.section
+                        id="refund"
                         initial={{ opacity: 0, y: 30 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}

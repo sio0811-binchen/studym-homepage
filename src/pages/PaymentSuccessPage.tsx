@@ -6,7 +6,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, Loader2 } from 'lucide-react';
 import { sendAligoSMS } from '../utils/sms';
 
-const API_BASE = 'https://studym-homepage-production-a3c2.up.railway.app';
+const API_BASE = '';
 
 const PaymentSuccessPage = () => {
     const [searchParams] = useSearchParams();

@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { TrendingUp, Users, Shield, CheckCircle, ArrowRight, MapPin } from 'lucide-react';
+import Navbar from '../components/layout/Navbar';
+import Footer from '../components/layout/Footer';
 
 const FranchiseInquiry = () => {
     const [formData, setFormData] = useState({
@@ -88,6 +90,7 @@ const FranchiseInquiry = () => {
 
     return (
         <div className="min-h-screen bg-white">
+            <Navbar />
             {/* Hero Section */}
             <section className="bg-gradient-to-br from-brand-navy to-slate-900 text-white py-24">
                 <div className="container mx-auto px-6">
@@ -316,6 +319,8 @@ const FranchiseInquiry = () => {
                     </div>
                 </div>
             </section>
+
+            <Footer />
         </div>
     );
 };

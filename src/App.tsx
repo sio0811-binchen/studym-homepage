@@ -21,6 +21,7 @@ import CompanyAbout from './pages/CompanyAbout';
 import Features from './pages/Features';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 
+
 // Admin Pages
 import AdminLoginPage from './pages/admin/AdminLoginPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
@@ -29,6 +30,7 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import PaymentPage from './pages/PaymentPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentFailPage from './pages/PaymentFailPage';
+import PaymentTestPage from './pages/PaymentTestPage';
 import ErrorBoundary from './components/ErrorBoundary';
 
 // Router wrapper for page tracking
@@ -83,9 +85,12 @@ function App() {
             {/* Footer Pages */}
             <Route path="/about" element={<CompanyAbout />} />
             <Route path="/features" element={<Features />} />
+            <Route path="/features" element={<Features />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
 
+
             {/* Payment Pages */}
+            <Route path="/pay/test" element={<PaymentTestPage />} />
             <Route path="/pay/:token" element={<PaymentPage />} />
             <Route path="/pay/:token/success" element={<PaymentSuccessPage />} />
             <Route path="/pay/:token/fail" element={<PaymentFailPage />} />

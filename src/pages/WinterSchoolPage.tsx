@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Clock, Coffee, Moon, Sun, ArrowRight, AlertTriangle } from 'lucide-react';
+import Navbar from '../components/layout/Navbar';
+import Footer from '../components/layout/Footer';
 
 const WinterSchoolPage = () => {
     const navigate = useNavigate();
@@ -23,6 +25,7 @@ const WinterSchoolPage = () => {
 
     return (
         <div className="min-h-screen bg-white">
+            <Navbar />
             {/* Hero Section with Urgency */}
             <section className="relative bg-gradient-to-br from-brand-navy via-slate-900 to-brand-navy text-white py-32 overflow-hidden">
                 <div className="absolute inset-0 opacity-10"
@@ -213,6 +216,8 @@ const WinterSchoolPage = () => {
                     </motion.div>
                 </div>
             </section>
+
+            <Footer />
         </div>
     );
 };

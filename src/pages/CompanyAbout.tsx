@@ -18,7 +18,7 @@ const CompanyAbout = () => {
                         className="text-center text-white max-w-4xl mx-auto"
                     >
                         <p className="text-slate-400 text-sm tracking-widest uppercase mb-4">
-                            Company Philosophy
+                            경영 철학 (Philosophy)
                         </p>
                         <h1 className="text-3xl md:text-5xl font-light mb-8 leading-tight">
                             기업가치를 10배로 키우던 원칙,<br />
@@ -38,7 +38,7 @@ const CompanyAbout = () => {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                         >
-                            <p className="text-xs text-slate-500 uppercase tracking-widest mb-4">CEO Message</p>
+                            <p className="text-xs text-slate-500 uppercase tracking-widest mb-4">CEO Message (대표 인사말)</p>
                             <h2 className="text-2xl md:text-3xl font-light text-slate-900 mb-10 leading-relaxed">
                                 "인생에도 재무제표가 있다면,<br />
                                 당신의 아이는 성장하고 있습니까?"
