@@ -164,6 +164,20 @@ app.post('/api/consultations/', async (req, res) => {
     try {
         const { student_name, student_school, student_grade, parent_name, parent_phone, consultation_date } = req.body;
 
+        // 필수 필드 유효성 검사
+        const missingFields = [];
+        if (!student_name || student_name.trim() === '') missingFields.push('이름');
+        if (!student_grade || student_grade.trim() === '') missingFields.push('구분(학년)');
+        if (!parent_phone || parent_phone.trim() === '') missingFields.push('연락처');
+
+        if (missingFields.length > 0) {
+            console.log('상담 신청 유효성 검사 실패:', { student_name, student_grade, parent_phone, missingFields });
+            return res.status(400).json({
+                error: `필수 정보가 누락되었습니다: ${missingFields.join(', ')}`,
+                missing_fields: missingFields
+            });
+        }
+
         const result = await pool.query(
             `INSERT INTO consultations (student_name, student_school, student_grade, parent_name, parent_phone, consultation_date)
              VALUES ($1, $2, $3, $4, $5, $6)

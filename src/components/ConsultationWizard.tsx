@@ -16,6 +16,7 @@ type FormData = {
     parentPhone: string;
     consultationType: 'VISIT' | 'PHONE';
     consultationDate: Date;
+    studentPhone: string; // 일반(본인) 선택 시 본인 연락처
 };
 
 const ConsultationWizard = () => {
@@ -46,7 +47,7 @@ const ConsultationWizard = () => {
                 student_school: data.studentSchool,
                 student_grade: data.studentGrade,
                 parent_name: isGeneral ? data.studentName : data.parentName,
-                parent_phone: isGeneral ? '' : data.parentPhone,
+                parent_phone: isGeneral ? data.studentPhone : data.parentPhone, // 일반 선택 시 본인 연락처 사용
                 consultation_type: data.consultationType || 'PHONE',
                 consultation_date: data.consultationType === 'VISIT' && data.consultationDate ? data.consultationDate.toISOString() : null,
                 status: 'PENDING',
@@ -182,7 +183,35 @@ const ConsultationWizard = () => {
             case 2:
                 return (
                     <div className="space-y-6">
-                        {!isGeneral && (
+                        {isGeneral ? (
+                            // 일반(본인) 선택 시 본인 연락처 입력
+                            <>
+                                <h3 className="text-2xl font-bold text-brand-navy mb-8">연락처를 남겨주세요.</h3>
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-2">연락처 *</label>
+                                        <Controller
+                                            name="studentPhone"
+                                            control={control}
+                                            rules={{ required: isGeneral }}
+                                            render={({ field }) => (
+                                                <input
+                                                    {...field}
+                                                    onChange={(e) => {
+                                                        const formatted = formatPhoneNumber(e.target.value);
+                                                        field.onChange(formatted);
+                                                    }}
+                                                    placeholder="010-0000-0000"
+                                                    maxLength={13}
+                                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-brand-navy focus:ring-1 focus:ring-brand-navy outline-none transition-all"
+                                                />
+                                            )}
+                                        />
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            // 학생 선택 시 학부모 연락처 입력
                             <>
                                 <h3 className="text-2xl font-bold text-brand-navy mb-8">학부모님 연락처를 남겨주세요.</h3>
                                 <div className="space-y-6">
@@ -281,6 +310,7 @@ const ConsultationWizard = () => {
                             type="submit"
                             disabled={
                                 isSubmittingMock ||
+                                (isGeneral && !watch("studentPhone")) || // 일반 선택 시 본인 연락처 필수
                                 (!isGeneral && (!watch("parentName") || !watch("parentPhone"))) ||
                                 !watch("consultationType") ||
                                 (watch("consultationType") === 'VISIT' && !watch("consultationDate"))
