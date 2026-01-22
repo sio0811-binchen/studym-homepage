@@ -9,7 +9,7 @@ import { formatPhoneOnInput } from '../utils/phoneFormat';
 
 // API Base URL (Relative for proxy)
 const API_BASE = '';
-const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY || 'test_ck_ex6BJGQOVDvLA4OAxpya8W4w2zNb';
+const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY || 'live_ck_5OWRapdA8dzonqzk72R6Vo1zEqZK';
 
 const PaymentTestPage = () => {
     // const navigate = useNavigate(); // Removed unused variable
