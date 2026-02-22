@@ -5,6 +5,8 @@ import { useState, useEffect } from 'react';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import { useSEO } from '../hooks/useSEO';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Article {
     id: string;
@@ -69,74 +71,6 @@ const ColumnDetail = () => {
         ogImage: article?.thumbnail || 'https://studym.co.kr/og-image.png',
         url: `https://studym.co.kr/blog/${slug}`
     });
-
-    // 마크다운 기호 완전 제거 함수
-    const cleanMarkdown = (text: string): string => {
-        return text
-            // ** 제거 (볼드)
-            .replace(/\*\*(.*?)\*\*/g, '$1')
-            // * 제거 (이탤릭)
-            .replace(/\*(.*?)\*/g, '$1')
-            // __ 제거
-            .replace(/__(.*?)__/g, '$1')
-            // _ 제거
-            .replace(/_(.*?)_/g, '$1')
-            // ## 제거 (헤딩)
-            .replace(/^##\s+/gm, '')
-            // # 제거
-            .replace(/^#\s+/gm, '')
-            // ### 제거
-            .replace(/^###\s+/gm, '')
-            // #### 제거
-            .replace(/^####\s+/gm, '')
-            // - 리스트 기호는 유지하되 앞에 공백만 제거
-            .replace(/^-\s+/gm, '• ')
-            // ✓ 기호는 유지
-            .replace(/^✓\s+/gm, '✓ ');
-    };
-
-    // 본문을 문단으로 나누고 렌더링
-    const renderContent = (content: string) => {
-        const cleaned = cleanMarkdown(content);
-        const paragraphs = cleaned.split('\n\n').filter(p => p.trim());
-
-        return paragraphs.map((paragraph, idx) => {
-            const trimmed = paragraph.trim();
-
-            // 빈 문단 스킵
-            if (!trimmed) return null;
-
-            // 리스트 항목들 (•나 ✓로 시작)
-            if (trimmed.includes('\n• ') || trimmed.includes('\n✓ ')) {
-                const items = trimmed.split('\n').filter(line => line.trim());
-                return (
-                    <ul key={idx} className="my-6 space-y-3 pl-5">
-                        {items.map((item, i) => (
-                            <li key={i} className="text-slate-700 leading-relaxed list-disc">
-                                {item.replace(/^[•✓]\s*/, '')}
-                            </li>
-                        ))}
-                    </ul>
-                );
-            }
-
-            // 강조할 제목형 문단 (짧고 끝에 물음표나 느낌표가 있는 경우)
-            if (trimmed.length < 60 && (trimmed.endsWith('?') || trimmed.endsWith('!'))) {
-                return (
-                    <h3 key={idx} className="text-2xl font-bold text-brand-navy mt-10 mb-4">
-                        {trimmed}
-                    </h3>
-                );
-            }
-
-            // 일반 문단
-            return (
-                <p key={idx} className="text-slate-700 leading-relaxed mb-6 text-lg">
-                    {trimmed}
-                </p>
-            );
-        });
-    };
 
     if (loading) {
         return (
@@ -214,7 +148,7 @@ const ColumnDetail = () => {
                 </div>
             </section>
 
-            {/* Content - 마크다운 기호 완전 제거 */}
+            {/* Content - 마크다운 렌더링 */}
             <section className="py-20">
                 <div className="container mx-auto px-6">
                     <div className="max-w-3xl mx-auto">
@@ -222,16 +156,51 @@ const ColumnDetail = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2 }}
-                            className="prose prose-lg max-w-none"
+                            className="w-full"
                         >
-                            {renderContent(article.content)}
+                            <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                    h1: ({ node, ...props }) => <h1 className="text-4xl font-bold text-brand-navy mt-16 mb-10" {...props} />,
+                                    h2: ({ node, ...props }) => (
+                                        <h2 className="text-3xl font-bold text-brand-navy mt-16 mb-8 relative inline-block">
+                                            <span className="relative z-10">{props.children}</span>
+                                            <span className="absolute bottom-2 left-0 w-full h-3 bg-brand-gold/30 -z-0"></span>
+                                        </h2>
+                                    ),
+                                    h3: ({ node, ...props }) => <h3 className="text-2xl font-bold text-brand-navy mt-12 mb-6 border-l-4 border-brand-navy pl-4" {...props} />,
+                                    p: ({ node, ...props }) => <p className="text-[#333333] leading-[1.8] mb-8 text-[1.125rem]" style={{ wordBreak: 'keep-all' }} {...props} />,
+                                    ul: ({ node, ...props }) => <ul className="list-disc pl-8 mb-10 text-[#333333] text-[1.125rem] space-y-3 leading-[1.8]" {...props} />,
+                                    ol: ({ node, ...props }) => <ol className="list-decimal pl-8 mb-10 text-[#333333] text-[1.125rem] space-y-3 leading-[1.8]" {...props} />,
+                                    li: ({ node, ...props }) => <li className="" {...props} />,
+                                    blockquote: ({ node, ...props }) => (
+                                        <blockquote className="bg-slate-50 border-l-8 border-brand-gold p-8 my-12 rounded-r-xl shadow-sm italic text-slate-700 font-medium leading-[1.8]">
+                                            {props.children}
+                                        </blockquote>
+                                    ),
+                                    img: ({ node, ...props }) => (
+                                        <figure className="my-14 flex flex-col items-center">
+                                            <img className="w-full rounded-2xl shadow-xl object-cover max-h-[550px]" {...props} />
+                                            {props.alt && <figcaption className="text-sm text-slate-500 mt-4 font-medium">{props.alt}</figcaption>}
+                                        </figure>
+                                    ),
+                                    hr: ({ node, ...props }) => <hr className="border-slate-200 my-16" {...props} />,
+                                    table: ({ node, ...props }) => <div className="overflow-x-auto my-12"><table className="w-full border-collapse border border-slate-200 shadow-sm rounded-lg" {...props} /></div>,
+                                    th: ({ node, ...props }) => <th className="bg-brand-navy text-white text-left px-6 py-4 font-semibold border border-slate-200 text-lg" {...props} />,
+                                    td: ({ node, ...props }) => <td className="px-6 py-4 border border-slate-200 text-[#333333] bg-white leading-[1.8]" {...props} />,
+                                    strong: ({ node, ...props }) => <strong className="font-bold text-brand-navy" {...props} />,
+                                    a: ({ node, ...props }) => <a className="text-brand-gold hover:underline font-bold transition-colors" {...props} />,
+                                }}
+                            >
+                                {article.content}
+                            </ReactMarkdown>
                         </motion.article>
                     </div>
                 </div>
-            </section>
+            </section >
 
             {/* CTA */}
-            <section className="py-20 bg-brand-gold/5 border-y border-brand-gold/20">
+            < section className="py-20 bg-brand-gold/5 border-y border-brand-gold/20" >
                 <div className="container mx-auto px-6">
                     <div className="max-w-3xl mx-auto text-center">
                         <h2 className="text-3xl font-bold text-brand-navy mb-4">
@@ -248,46 +217,48 @@ const ColumnDetail = () => {
                         </a>
                     </div>
                 </div>
-            </section>
+            </section >
 
             {/* Related Articles */}
-            {relatedArticles.length > 0 && (
-                <section className="py-20">
-                    <div className="container mx-auto px-6">
-                        <div className="max-w-4xl mx-auto">
-                            <h2 className="text-3xl font-bold text-brand-navy mb-8">
-                                같은 카테고리의 다른 글
-                            </h2>
-                            <div className="grid md:grid-cols-2 gap-6">
-                                {relatedArticles.map((related) => (
-                                    <Link
-                                        key={related.id}
-                                        to={`/blog/${related.slug}`}
-                                        className="p-6 bg-slate-50 rounded-xl hover:bg-slate-100 transition-all border border-slate-200 hover:shadow-lg group"
-                                    >
-                                        <span className="inline-block px-2 py-1 bg-brand-gold/10 text-brand-gold text-xs font-semibold rounded mb-3">
-                                            {related.category}
-                                        </span>
-                                        <h3 className="text-xl font-bold text-brand-navy group-hover:text-brand-gold transition-colors mb-2">
-                                            {related.title}
-                                        </h3>
-                                        <p className="text-slate-600 text-sm line-clamp-2">
-                                            {related.excerpt}
-                                        </p>
-                                        <div className="flex items-center gap-4 mt-4 text-slate-500 text-xs">
-                                            <span>{related.date}</span>
-                                            <span>{related.readTime}</span>
-                                        </div>
-                                    </Link>
-                                ))}
+            {
+                relatedArticles.length > 0 && (
+                    <section className="py-20">
+                        <div className="container mx-auto px-6">
+                            <div className="max-w-4xl mx-auto">
+                                <h2 className="text-3xl font-bold text-brand-navy mb-8">
+                                    같은 카테고리의 다른 글
+                                </h2>
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    {relatedArticles.map((related) => (
+                                        <Link
+                                            key={related.id}
+                                            to={`/blog/${related.slug}`}
+                                            className="p-6 bg-slate-50 rounded-xl hover:bg-slate-100 transition-all border border-slate-200 hover:shadow-lg group"
+                                        >
+                                            <span className="inline-block px-2 py-1 bg-brand-gold/10 text-brand-gold text-xs font-semibold rounded mb-3">
+                                                {related.category}
+                                            </span>
+                                            <h3 className="text-xl font-bold text-brand-navy group-hover:text-brand-gold transition-colors mb-2">
+                                                {related.title}
+                                            </h3>
+                                            <p className="text-slate-600 text-sm line-clamp-2">
+                                                {related.excerpt}
+                                            </p>
+                                            <div className="flex items-center gap-4 mt-4 text-slate-500 text-xs">
+                                                <span>{related.date}</span>
+                                                <span>{related.readTime}</span>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </section>
-            )}
+                    </section>
+                )
+            }
 
             <Footer />
-        </div>
+        </div >
     );
 };
 

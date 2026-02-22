@@ -35,6 +35,7 @@
     "react-hot-toast": "^2.6.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.10.1",
+    "remark-gfm": "^4.0.0",
     "recharts": "^3.5.1",
     "serve": "^14.2.5",
     "tailwind-merge": "^3.4.0",
