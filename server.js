@@ -293,7 +293,7 @@ app.post('/api/blog/', async (req, res) => {
             return res.status(401).json({ error: 'Unauthorized: Invalid Secret Key' });
         }
 
-        const { title, slug, category, excerpt, content, author, read_time, tags, thumbnail } = req.body;
+        const { title, slug, category, excerpt, content, author, read_time, tags, thumbnail, date } = req.body;
 
         if (!title || !slug || !content) {
             return res.status(400).json({ error: '필수 필드 누락 (title, slug, content)' });
@@ -307,10 +307,10 @@ app.post('/api/blog/', async (req, res) => {
 
         const query = `
             INSERT INTO blogs (title, slug, category, excerpt, content, author, read_time, tags, thumbnail, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE($10, NOW()))
             RETURNING *
         `;
-        const values = [title, slug, category, excerpt, content, author, read_time, tagsJson, thumbnail];
+        const values = [title, slug, category, excerpt, content, author, read_time, tagsJson, thumbnail, date ? new Date(date) : null];
 
         const result = await pool.query(query, values);
         res.status(201).json({ message: 'Success', data: result.rows[0] });
