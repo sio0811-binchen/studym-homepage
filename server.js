@@ -324,6 +324,20 @@ app.post('/api/blog/', async (req, res) => {
     }
 });
 
+// 4. 블로그 포스트 삭제 (Admin용)
+app.delete('/api/blog/:slug', async (req, res) => {
+    try {
+        const adminSecret = req.headers['x-admin-secret'];
+        if (adminSecret !== process.env.ADMIN_SECRET_KEY && adminSecret !== 'studym001!') {
+            return res.status(401).json({ error: 'Unauthorized: Invalid Secret Key' });
+        }
+        await pool.query('DELETE FROM blogs WHERE slug = $1', [req.params.slug]);
+        res.status(204).send();
+    } catch (error) {
+        console.error('블로그 삭제 오류:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // ========== 상담 API ==========
 
