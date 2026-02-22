@@ -242,6 +242,92 @@ app.get('/rss.xml', async (req, res) => {
     }
 });
 
+// ========== 1회용 마이그레이션 엔드포인트 ==========
+// 기존 PostgreSQL -> WordPress로 데이터 전송
+app.get('/api/migrate-now', async (req, res) => {
+    try {
+        const WP_API_MIGRATE = 'https://wordpress-production-63d7.up.railway.app/wp-json/wp/v2';
+        const WP_AUTH = 'Basic ' + Buffer.from('studym_admin:eriJ 9mXq pTln vnQ1 tewo GeRU').toString('base64');
+
+        console.log('Connecting to PostgreSQL to fetch old posts...');
+        const result = await pool.query('SELECT * FROM blogs ORDER BY created_at ASC');
+        const rows = result.rows;
+
+        // Fetch WP categories
+        const catRes = await fetch(`${WP_API_MIGRATE}/categories?per_page=100`);
+        const catData = await catRes.json();
+        const wpCategoryMap = {};
+        catData.forEach(c => { wpCategoryMap[c.name] = c.id; });
+
+        let migratedCount = 0;
+        let logs = [];
+
+        for (const row of rows) {
+            let catId = wpCategoryMap[row.category];
+            if (!catId && row.category) {
+                const createCatRes = await fetch(`${WP_API_MIGRATE}/categories`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': WP_AUTH },
+                    body: JSON.stringify({ name: row.category })
+                });
+                if (createCatRes.ok) {
+                    const newCat = await createCatRes.json();
+                    catId = newCat.id;
+                    wpCategoryMap[row.category] = catId;
+                }
+            }
+
+            let htmlContent = row.content || '';
+            htmlContent = htmlContent
+                .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+                .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+                .replace(/^> (.*$)/gim, '<blockquote><p>$1</p></blockquote>')
+                .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+                .replace(/\*(.*)\*/gim, '<em>$1</em>')
+                .replace(/!\[(.*?)\]\((.*?)\)/gim, "<img alt='$1' src='$2' />")
+                .replace(/\[(.*?)\]\((.*?)\)/gim, "<a href='$2'>$1</a>")
+                .replace(/^\n$/gim, '<br />');
+
+            let paragraphs = htmlContent.split('\n\n');
+            htmlContent = paragraphs.map(p => {
+                p = p.trim();
+                if (!p.startsWith('<h') && !p.startsWith('<blockquote') && !p.startsWith('<img') && !p.startsWith('<a') && p.length > 0) {
+                    return `<p>${p}</p>`;
+                }
+                return p;
+            }).join('\n\n');
+
+            const payload = {
+                title: row.title,
+                content: htmlContent,
+                slug: row.slug,
+                status: 'publish',
+                categories: catId ? [catId] : [],
+                date: row.created_at.toISOString(),
+            };
+
+            const wpRes = await fetch(`${WP_API_MIGRATE}/posts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': WP_AUTH },
+                body: JSON.stringify(payload)
+            });
+
+            if (wpRes.ok) {
+                const wpPost = await wpRes.json();
+                logs.push(`✅ Migrated: [${row.title}] -> WP ID ${wpPost.id}`);
+                migratedCount++;
+            } else {
+                logs.push(`⚠️ Failed: [${row.title}] - Slug may already exist`);
+            }
+        }
+        res.json({ message: "Migration completed", migratedCount, totalFound: rows.length, logs });
+    } catch (e) {
+        console.error('Migration endpoint error:', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // ========== WordPress REST API 프록시 ==========
 const WP_API = 'https://wordpress-production-63d7.up.railway.app/wp-json/wp/v2';
 
