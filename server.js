@@ -246,7 +246,16 @@ app.get('/rss.xml', async (req, res) => {
 app.get('/api/blog/', async (req, res) => {
     try {
         const result = await pool.query('SELECT id, title, slug, category, excerpt, author, read_time as "readTime", tags, thumbnail, to_char(created_at, \'YYYY-MM-DD\') as date FROM blogs ORDER BY created_at DESC');
-        res.json(result.rows);
+
+        const rows = result.rows.map(row => {
+            let parsedTags = [];
+            if (row.tags) {
+                try { parsedTags = typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags; }
+                catch { parsedTags = typeof row.tags === 'string' ? row.tags.split(',') : [row.tags]; }
+            }
+            return { ...row, tags: parsedTags };
+        });
+        res.json(rows);
     } catch (error) {
         console.error('블로그 목록 조회 오류:', error);
         res.status(500).json({ error: error.message });
@@ -261,7 +270,15 @@ app.get('/api/blog/:slug', async (req, res) => {
         if (result.rows.length === 0) {
             return res.status(404).json({ error: '블로그 글을 찾을 수 없습니다.' });
         }
-        res.json(result.rows[0]);
+
+        const row = result.rows[0];
+        let parsedTags = [];
+        if (row.tags) {
+            try { parsedTags = typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags; }
+            catch { parsedTags = typeof row.tags === 'string' ? row.tags.split(',') : [row.tags]; }
+        }
+
+        res.json({ ...row, tags: parsedTags });
     } catch (error) {
         console.error('블로그 상세 조회 오류:', error);
         res.status(500).json({ error: error.message });
