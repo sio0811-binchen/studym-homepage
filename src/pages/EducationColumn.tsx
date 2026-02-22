@@ -138,12 +138,14 @@ const EducationColumn = () => {
                                             </div>
 
                                             {/* Title & Excerpt */}
-                                            <h3 className="text-xl font-bold text-slate-800 mb-3 leading-snug group-hover:text-brand-navy transition-colors line-clamp-2">
-                                                {column.title}
-                                            </h3>
-                                            <p className="text-slate-600 text-sm leading-relaxed mb-6 line-clamp-3 flex-grow">
-                                                {column.excerpt}
-                                            </p>
+                                            <h3
+                                                className="text-xl font-bold text-slate-800 mb-3 leading-snug group-hover:text-brand-navy transition-colors line-clamp-2"
+                                                dangerouslySetInnerHTML={{ __html: column.title }}
+                                            />
+                                            <p
+                                                className="text-slate-600 text-sm leading-relaxed mb-6 line-clamp-3 flex-grow"
+                                                dangerouslySetInnerHTML={{ __html: column.excerpt }}
+                                            />
 
                                             {/* Footer - Author details */}
                                             <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">

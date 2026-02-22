@@ -110,9 +110,10 @@ const ColumnDetail = () => {
                                 {article.category}
                             </span>
 
-                            <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
-                                {article.title}
-                            </h1>
+                            <h1
+                                className="text-4xl md:text-5xl font-bold mb-6 leading-tight"
+                                dangerouslySetInnerHTML={{ __html: article.title }}
+                            />
 
                             <div className="flex flex-wrap items-center gap-6 text-slate-300">
                                 <span className="flex items-center gap-2">
