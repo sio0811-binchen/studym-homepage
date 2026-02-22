@@ -4,6 +4,7 @@ import { Calendar, Eye, ArrowLeft, Tag } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
+import { useSEO } from '../hooks/useSEO';
 
 interface Article {
     id: string;
@@ -27,24 +28,28 @@ const ColumnDetail = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // JSON 파일에서 전체 아티클 로드
-        fetch('/content/articles.json')
-            .then(res => res.json())
-            .then((data: Article[]) => {
-                // slug와 일치하는 아티클 찾기
-                const foundArticle = data.find(a => a.slug === slug);
+        setLoading(true);
+        // DB API에서 상세 데이터 로드
+        fetch(`/api/blog/${slug}`)
+            .then(res => {
+                if (!res.ok) throw new Error('Not found');
+                return res.json();
+            })
+            .then(async (data: Article) => {
+                setArticle(data);
 
-                if (foundArticle) {
-                    setArticle(foundArticle);
-
-                    // 같은 카테고리의 다른 글 2개 찾기
-                    const related = data
-                        .filter(a => a.category === foundArticle.category && a.id !== foundArticle.id)
-                        .slice(0, 2);
-                    setRelatedArticles(related);
-                } else {
-                    // 아티클을 찾지 못하면 목록으로 리다이렉트
-                    navigate('/columns');
+                // 관련 글 로드를 위해 전체 목록 호출
+                try {
+                    const listRes = await fetch('/api/blog');
+                    if (listRes.ok) {
+                        const allData: Article[] = await listRes.json();
+                        const related = allData
+                            .filter(a => a.category === data.category && a.slug !== slug)
+                            .slice(0, 2);
+                        setRelatedArticles(related);
+                    }
+                } catch (e) {
+                    console.error('Failed to load related articles', e);
                 }
 
                 setLoading(false);
@@ -52,9 +57,18 @@ const ColumnDetail = () => {
             .catch(err => {
                 console.error('Failed to load article:', err);
                 setLoading(false);
-                navigate('/columns');
+                navigate('/blog');
             });
     }, [slug, navigate]);
+
+    // 동적 SEO 업데이트
+    useSEO({
+        title: article ? `${article.title} | STUDY M` : '공부법 연구소 | STUDY M',
+        description: article ? article.excerpt : 'STUDY M 데이터 기반 맞춤형 학습법 칼럼.',
+        keywords: article?.tags ? article.tags.join(', ') : '학습법, 스터디엠',
+        ogImage: article?.thumbnail || 'https://studym.co.kr/og-image.png',
+        url: `https://studym.co.kr/blog/${slug}`
+    });
 
     // 마크다운 기호 완전 제거 함수
     const cleanMarkdown = (text: string): string => {
@@ -148,7 +162,7 @@ const ColumnDetail = () => {
                 <div className="container mx-auto px-6">
                     <div className="max-w-4xl mx-auto">
                         <Link
-                            to="/columns"
+                            to="/blog"
                             className="inline-flex items-center gap-2 text-slate-300 hover:text-white mb-6 transition-colors"
                         >
                             <ArrowLeft className="w-5 h-5" />
@@ -248,7 +262,7 @@ const ColumnDetail = () => {
                                 {relatedArticles.map((related) => (
                                     <Link
                                         key={related.id}
-                                        to={`/column/${related.slug}`}
+                                        to={`/blog/${related.slug}`}
                                         className="p-6 bg-slate-50 rounded-xl hover:bg-slate-100 transition-all border border-slate-200 hover:shadow-lg group"
                                     >
                                         <span className="inline-block px-2 py-1 bg-brand-gold/10 text-brand-gold text-xs font-semibold rounded mb-3">

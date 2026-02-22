@@ -1,6 +1,6 @@
-
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useSEO } from '../hooks/useSEO';
 import Hero from '../components/Hero';
 import PlanActualCore from '../components/PlanActualCore';
 import VisionStory from '../components/VisionStory';
@@ -20,6 +20,12 @@ import Footer from '../components/layout/Footer';
 
 function Home() {
     const location = useLocation();
+
+    useSEO({
+        title: 'STUDY M - 상위 1% 학습 경영 시스템',
+        description: '데이터 기반 맞춤형 학습 관리로 상위 1% 성적 달성. 학생과 학부모가 함께 성장하는 STUDY M.',
+        url: 'https://studym.co.kr/'
+    });
 
     // URL 해시가 있으면 해당 섹션으로 스크롤
     useEffect(() => {

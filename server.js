@@ -102,6 +102,24 @@ async function initDatabase() {
         await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS receipt_url VARCHAR(500)`);
         await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS canceled_amount INTEGER DEFAULT 0`);
 
+        // 블로그(칼럼) 테이블
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS blogs (
+                id SERIAL PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                slug VARCHAR(255) UNIQUE NOT NULL,
+                category VARCHAR(100),
+                excerpt TEXT,
+                content TEXT NOT NULL,
+                author VARCHAR(100) DEFAULT 'Study M 교육연구소',
+                read_time VARCHAR(20),
+                tags TEXT,
+                thumbnail VARCHAR(500),
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+        `);
+
         console.log('✅ Database tables initialized successfully');
         isDbConnected = true;
     } catch (error) {
@@ -156,6 +174,139 @@ async function sendSMS(to, message) {
         return { success: false, error: error.response?.data || error.message };
     }
 }
+
+// ========== 블로그(칼럼) API ==========
+
+// SEO: Sitemap.xml 생성 엔드포인트
+app.get('/sitemap.xml', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT slug, updated_at FROM blogs ORDER BY updated_at DESC');
+
+        const baseUrl = 'https://www.studym.co.kr';
+        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+        xml += '<urlset xlmns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+
+        // 정적 페이지들 추가
+        const staticPages = ['', '/story', '/diagnosis', '/columns', '/manual', '/franchise', '/admin'];
+        staticPages.forEach(path => {
+            xml += `  <url>\n    <loc>${baseUrl}${path}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+        });
+
+        // 블로그 동적 페이지들 추가
+        result.rows.forEach(row => {
+            const date = new Date(row.updated_at).toISOString().split('T')[0];
+            xml += `  <url>\n    <loc>${baseUrl}/blog/${row.slug}</loc>\n    <lastmod>${date}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+        });
+
+        xml += '</urlset>';
+
+        res.header('Content-Type', 'application/xml');
+        res.send(xml);
+    } catch (error) {
+        console.error('Sitemap 생성 오류:', error);
+        res.status(500).send('Error generating sitemap');
+    }
+});
+
+// SEO: RSS Feed 생성 엔드포인트
+app.get('/rss.xml', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT title, slug, excerpt, author, created_at FROM blogs ORDER BY created_at DESC LIMIT 50');
+
+        const baseUrl = 'https://www.studym.co.kr';
+        let xml = '<?xml version="1.0" encoding="UTF-8" ?>\n';
+        xml += '<rss version="2.0">\n';
+        xml += '<channel>\n';
+        xml += '  <title>Study M 교육연구소 칼럼</title>\n';
+        xml += `  <link>${baseUrl}/blog</link>\n`;
+        xml += '  <description>Study M의 학부모 맞춤형 전문 교육 가이드</description>\n';
+
+        result.rows.forEach(row => {
+            const date = new Date(row.created_at).toUTCString();
+            xml += '  <item>\n';
+            xml += `    <title><![CDATA[${row.title}]]></title>\n`;
+            xml += `    <link>${baseUrl}/blog/${row.slug}</link>\n`;
+            xml += `    <description><![CDATA[${row.excerpt}]]></description>\n`;
+            xml += `    <pubDate>${date}</pubDate>\n`;
+            xml += `    <author>${row.author}</author>\n`;
+            xml += '  </item>\n';
+        });
+
+        xml += '</channel>\n</rss>';
+
+        res.header('Content-Type', 'application/xml');
+        res.send(xml);
+    } catch (error) {
+        console.error('RSS 생성 오류:', error);
+        res.status(500).send('Error generating rss');
+    }
+});
+
+// 1. 블로그 목록 조회 (프론트엔드용)
+app.get('/api/blog/', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT id, title, slug, category, excerpt, author, read_time as "readTime", tags, thumbnail, to_char(created_at, \'YYYY-MM-DD\') as date FROM blogs ORDER BY created_at DESC');
+        res.json(result.rows);
+    } catch (error) {
+        console.error('블로그 목록 조회 오류:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// 2. 블로그 상세 조회 (프론트엔드용)
+app.get('/api/blog/:slug', async (req, res) => {
+    try {
+        const { slug } = req.params;
+        const result = await pool.query('SELECT id, title, slug, category, excerpt, content, author, read_time as "readTime", tags, thumbnail, to_char(created_at, \'YYYY-MM-DD\') as date FROM blogs WHERE slug = $1', [slug]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: '블로그 글을 찾을 수 없습니다.' });
+        }
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('블로그 상세 조회 오류:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// 3. 블로그 포스트 생성 (Agent용)
+app.post('/api/blog/', async (req, res) => {
+    try {
+        const adminSecret = req.headers['x-admin-secret'];
+        if (adminSecret !== process.env.ADMIN_SECRET_KEY) {
+            return res.status(401).json({ error: 'Unauthorized: Invalid Secret Key' });
+        }
+
+        const { title, slug, category, excerpt, content, author, read_time, tags, thumbnail } = req.body;
+
+        if (!title || !slug || !content) {
+            return res.status(400).json({ error: '필수 필드 누락 (title, slug, content)' });
+        }
+
+        // tags 배열을 JSON 배열 문자열로 저장 (프론트엔드에서 파싱하거나 포맷 수정 가능, 현 코드에서는 TEXT 컬럼)
+        let tagsJson = tags;
+        if (Array.isArray(tags)) {
+            tagsJson = JSON.stringify(tags);
+        }
+
+        const query = `
+            INSERT INTO blogs (title, slug, category, excerpt, content, author, read_time, tags, thumbnail, created_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+            RETURNING *
+        `;
+        const values = [title, slug, category, excerpt, content, author, read_time, tagsJson, thumbnail];
+
+        const result = await pool.query(query, values);
+        res.status(201).json({ message: 'Success', data: result.rows[0] });
+    } catch (error) {
+        if (error.code === '23505') { // Unique violation
+            console.error('블로그 생성 오류(중복):', error.message);
+            return res.status(409).json({ error: '이미 존재하는 URL 슬러그입니다.' });
+        }
+        console.error('블로그 생성 오류:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 
 // ========== 상담 API ==========
 

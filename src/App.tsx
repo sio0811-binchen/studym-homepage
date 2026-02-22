@@ -73,8 +73,8 @@ function App() {
             <Route path="/programs/winter-school" element={<WinterSchoolPage />} />
 
             {/* Blog Pages (Existing - with 30-year expert tone) */}
-            <Route path="/columns" element={<EducationColumn />} />
-            <Route path="/column/:slug" element={<ColumnDetail />} />
+            <Route path="/blog" element={<EducationColumn />} />
+            <Route path="/blog/:slug" element={<ColumnDetail />} />
 
             {/* Other Pages */}
             <Route path="/franchise" element={<FranchiseInquiry />} />

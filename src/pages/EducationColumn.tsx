@@ -4,17 +4,30 @@ import { Link } from 'react-router-dom';
 import { Calendar, Eye, User } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
+import { useSEO } from '../hooks/useSEO';
 
 const EducationColumn = () => {
     const [selectedCategory, setSelectedCategory] = useState('ALL');
     const [columns, setColumns] = useState<any[]>([]);
 
-    // JSON 파일에서 칼럼 로드
+    useSEO({
+        title: '공부법 연구소 | STUDY M',
+        description: 'STUDY M 데이터 기반 맞춤형 학습법 칼럼. 학부모님과 학생들을 위한 진짜 교육 인사이트를 만나보세요.',
+        url: 'https://studym.co.kr/blog'
+    });
+
+    // DB API에서 블로그 칼럼 로드
     useEffect(() => {
-        fetch('/content/articles.json')
-            .then(res => res.json())
-            .then(data => setColumns(data))
-            .catch(err => console.error('Failed to load articles:', err));
+        fetch('/api/blog')
+            .then(res => {
+                if (!res.ok) throw new Error('API Error');
+                return res.json();
+            })
+            .then(data => setColumns(data || []))
+            .catch(err => {
+                console.error('Failed to load articles:', err);
+                setColumns([]); // Fallback
+            });
     }, []);
 
     const categories = [
@@ -94,7 +107,7 @@ const EducationColumn = () => {
                                     transition={{ delay: idx * 0.05 }}
                                 >
                                     <Link
-                                        to={`/column/${column.slug}`}
+                                        to={`/blog/${column.slug}`}
                                         className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 hover:bg-slate-50 transition-colors border-b border-slate-100 group"
                                     >
                                         {/* Number - Desktop */}

@@ -12,7 +12,7 @@ const Navbar = () => {
     const menuItems = [
         { label: '브랜드 스토리', href: '/story' },
         { label: '학습 정밀 진단', href: '/diagnosis' },
-        { label: '공부법 연구소', href: '/columns' },
+        { label: '공부법 연구소', href: '/blog' },
         { label: '운영지침안내', href: '/manual' },
         // { label: '가맹 안내', href: '/franchise' }, // 오픈 초기 임시 숨김
         { label: 'Admin', href: '/admin' },
