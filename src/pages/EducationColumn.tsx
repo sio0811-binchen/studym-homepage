@@ -86,73 +86,72 @@ const EducationColumn = () => {
             <section className="py-12">
                 <div className="container mx-auto px-6">
                     <div className="max-w-5xl mx-auto">
-                        {/* Table Header */}
-                        <div className="hidden md:grid md:grid-cols-12 gap-4 pb-4 border-b-2 border-brand-navy text-sm font-bold text-slate-700 mb-4">
-                            <div className="col-span-1 text-center">번호</div>
-                            <div className="col-span-1 text-center">카테고리</div>
-                            <div className="col-span-6">제목</div>
-                            <div className="col-span-2 text-center">작성자</div>
-                            <div className="col-span-1 text-center">날짜</div>
-                            <div className="col-span-1 text-center">읽기</div>
-                        </div>
-
-                        {/* Board Items with Numbers */}
-                        <div className="space-y-1">
+                        {/* Modern Blog Card Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             {filteredColumns.map((column, idx) => (
                                 <motion.div
                                     key={column.id}
-                                    initial={{ opacity: 0, y: 10 }}
+                                    initial={{ opacity: 0, y: 20 }}
                                     whileInView={{ opacity: 1, y: 0 }}
                                     viewport={{ once: true }}
-                                    transition={{ delay: idx * 0.05 }}
+                                    transition={{ delay: idx * 0.1 }}
+                                    className="group flex flex-col h-full bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100"
                                 >
-                                    <Link
-                                        to={`/blog/${column.slug}`}
-                                        className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 hover:bg-slate-50 transition-colors border-b border-slate-100 group"
-                                    >
-                                        {/* Number - Desktop */}
-                                        <div className="hidden md:flex md:col-span-1 justify-center items-center">
-                                            <span className="text-brand-navy font-semibold">
-                                                {idx + 1}
-                                            </span>
-                                        </div>
-
-                                        {/* Category */}
-                                        <div className="md:col-span-1 flex md:justify-center items-center">
-                                            <span className="inline-block px-3 py-1 bg-brand-gold/10 text-brand-gold text-xs font-semibold rounded-full">
-                                                {column.category}
-                                            </span>
-                                        </div>
-
-                                        {/* Title with mobile number */}
-                                        <div className="md:col-span-6">
-                                            <h3 className="text-lg md:text-base font-bold text-brand-navy group-hover:text-brand-gold transition-colors mb-2 md:mb-1">
-                                                <span className="md:hidden text-slate-500 font-normal mr-2">
-                                                    {idx + 1}.
+                                    <Link to={`/blog/${column.slug}`} className="flex flex-col h-full">
+                                        {/* Thumbnail or Category Header */}
+                                        <div className="relative h-48 bg-slate-100 overflow-hidden">
+                                            {column.thumbnail ? (
+                                                <img
+                                                    src={column.thumbnail}
+                                                    alt={column.title}
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 group-hover:scale-105 transition-transform duration-500">
+                                                    <span className="text-slate-400 font-bold tracking-widest uppercase opacity-70">Study M</span>
+                                                </div>
+                                            )}
+                                            <div className="absolute top-4 left-4">
+                                                <span className="inline-block px-3 py-1 bg-white/90 backdrop-blur-sm text-brand-navy shadow-sm text-xs font-bold rounded-full">
+                                                    {column.category}
                                                 </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Content container */}
+                                        <div className="flex flex-col flex-grow p-6">
+                                            {/* Meta info row */}
+                                            <div className="flex items-center justify-between text-xs text-slate-500 mb-3">
+                                                <div className="flex items-center space-x-1">
+                                                    <Calendar className="w-3.5 h-3.5" />
+                                                    <span>{column.date}</span>
+                                                </div>
+                                                <div className="flex items-center space-x-1">
+                                                    <Eye className="w-3.5 h-3.5" />
+                                                    <span>{column.readTime || '5분'}</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Title & Excerpt */}
+                                            <h3 className="text-xl font-bold text-slate-800 mb-3 leading-snug group-hover:text-brand-navy transition-colors line-clamp-2">
                                                 {column.title}
                                             </h3>
-                                            <p className="text-sm text-slate-600 line-clamp-1 md:hidden">
+                                            <p className="text-slate-600 text-sm leading-relaxed mb-6 line-clamp-3 flex-grow">
                                                 {column.excerpt}
                                             </p>
-                                        </div>
 
-                                        {/* Author */}
-                                        <div className="md:col-span-2 flex items-center text-sm text-slate-600">
-                                            <User className="w-4 h-4 mr-1 md:hidden" />
-                                            <span className="md:text-center md:w-full">Study M</span>
-                                        </div>
-
-                                        {/* Date */}
-                                        <div className="md:col-span-1 flex items-center text-sm text-slate-500">
-                                            <Calendar className="w-4 h-4 mr-1 md:hidden" />
-                                            <span className="md:text-center md:w-full">{column.date}</span>
-                                        </div>
-
-                                        {/* Read Time */}
-                                        <div className="md:col-span-1 flex items-center text-sm text-slate-500">
-                                            <Eye className="w-4 h-4 mr-1 md:hidden" />
-                                            <span className="md:text-center md:w-full">{column.readTime}</span>
+                                            {/* Footer - Author details */}
+                                            <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
+                                                <div className="flex items-center space-x-2">
+                                                    <div className="w-8 h-8 rounded-full bg-brand-navy text-white flex items-center justify-center">
+                                                        <User className="w-4 h-4" />
+                                                    </div>
+                                                    <span className="text-sm font-semibold text-slate-700">{column.author || 'Study M 교육연구소'}</span>
+                                                </div>
+                                                <span className="text-brand-gold font-bold text-sm tracking-wide flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-x-2 group-hover:translate-x-0">
+                                                    자세히 보기 →
+                                                </span>
+                                            </div>
                                         </div>
                                     </Link>
                                 </motion.div>
