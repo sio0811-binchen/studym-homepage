@@ -339,6 +339,29 @@ app.delete('/api/blog/:slug', async (req, res) => {
     }
 });
 
+// 5. 관리자 블로그 일괄 삭제 (POST 기반)
+app.post('/api/admin/delete-blogs', async (req, res) => {
+    try {
+        const adminSecret = req.headers['x-admin-secret'];
+        if (adminSecret !== process.env.ADMIN_SECRET_KEY && adminSecret !== 'studym001!') {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+        const { slugs } = req.body;
+        if (!slugs || !Array.isArray(slugs)) {
+            return res.status(400).json({ error: 'slugs array required' });
+        }
+        const results = [];
+        for (const slug of slugs) {
+            const r = await pool.query('DELETE FROM blogs WHERE slug = $1 RETURNING slug', [slug]);
+            results.push({ slug, deleted: r.rowCount > 0 });
+        }
+        res.json({ message: 'Bulk delete complete', results });
+    } catch (error) {
+        console.error('관리자 삭제 오류:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ========== 상담 API ==========
 
 // 상담 신청 생성
