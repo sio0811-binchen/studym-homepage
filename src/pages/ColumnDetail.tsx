@@ -6,7 +6,7 @@ import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import { useSEO } from '../hooks/useSEO';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+
 
 interface Article {
     id: string;
@@ -159,7 +159,6 @@ const ColumnDetail = () => {
                             className="w-full"
                         >
                             <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
                                 components={{
                                     h1: ({ node, ...props }) => <h1 className="text-4xl font-bold text-brand-navy mt-16 mb-10" {...props} />,
                                     h2: ({ node, ...props }) => (
@@ -192,7 +191,7 @@ const ColumnDetail = () => {
                                     a: ({ node, ...props }) => <a className="text-brand-gold hover:underline font-bold transition-colors" {...props} />,
                                 }}
                             >
-                                {article.content}
+                                {article.content.replace(/\\n/g, '\n')}
                             </ReactMarkdown>
                         </motion.article>
                     </div>
