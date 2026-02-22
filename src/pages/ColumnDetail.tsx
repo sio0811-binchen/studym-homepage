@@ -155,21 +155,7 @@ const ColumnDetail = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2 }}
-                            className="w-full prose prose-lg max-w-none
-                                prose-headings:text-brand-navy prose-headings:font-bold
-                                prose-h1:text-4xl prose-h1:mt-16 prose-h1:mb-10
-                                prose-h2:text-3xl prose-h2:mt-16 prose-h2:mb-8
-                                prose-h3:text-2xl prose-h3:mt-12 prose-h3:mb-6 prose-h3:border-l-4 prose-h3:border-brand-navy prose-h3:pl-4
-                                prose-p:text-[#333333] prose-p:leading-[1.8] prose-p:mb-8 prose-p:text-[1.125rem]
-                                prose-ul:list-disc prose-ul:pl-8 prose-ul:mb-10 prose-ul:space-y-3
-                                prose-ol:list-decimal prose-ol:pl-8 prose-ol:mb-10 prose-ol:space-y-3
-                                prose-blockquote:bg-slate-50 prose-blockquote:border-l-8 prose-blockquote:border-brand-gold prose-blockquote:p-8 prose-blockquote:my-12 prose-blockquote:rounded-r-xl prose-blockquote:shadow-sm prose-blockquote:italic
-                                prose-img:w-full prose-img:rounded-2xl prose-img:shadow-xl prose-img:object-cover prose-img:max-h-[550px]
-                                prose-table:w-full prose-table:border-collapse prose-table:shadow-sm
-                                prose-th:bg-brand-navy prose-th:text-white prose-th:px-6 prose-th:py-4 prose-th:font-semibold prose-th:text-lg
-                                prose-td:px-6 prose-td:py-4 prose-td:border prose-td:border-slate-200
-                                prose-strong:font-bold prose-strong:text-brand-navy
-                                prose-a:text-brand-gold prose-a:font-bold hover:prose-a:underline"
+                            className="w-full wp-content"
                             style={{ wordBreak: 'keep-all' }}
                             dangerouslySetInnerHTML={{ __html: article.content }}
                         />
