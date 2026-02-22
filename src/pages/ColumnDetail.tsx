@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import { useSEO } from '../hooks/useSEO';
-import ReactMarkdown from 'react-markdown';
 
 
 interface Article {
@@ -156,44 +155,25 @@ const ColumnDetail = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2 }}
-                            className="w-full"
-                        >
-                            <ReactMarkdown
-                                components={{
-                                    h1: ({ node, ...props }) => <h1 className="text-4xl font-bold text-brand-navy mt-16 mb-10" {...props} />,
-                                    h2: ({ node, ...props }) => (
-                                        <h2 className="text-3xl font-bold text-brand-navy mt-16 mb-8 relative inline-block">
-                                            <span className="relative z-10">{props.children}</span>
-                                            <span className="absolute bottom-2 left-0 w-full h-3 bg-brand-gold/30 -z-0"></span>
-                                        </h2>
-                                    ),
-                                    h3: ({ node, ...props }) => <h3 className="text-2xl font-bold text-brand-navy mt-12 mb-6 border-l-4 border-brand-navy pl-4" {...props} />,
-                                    p: ({ node, ...props }) => <p className="text-[#333333] leading-[1.8] mb-8 text-[1.125rem]" style={{ wordBreak: 'keep-all' }} {...props} />,
-                                    ul: ({ node, ...props }) => <ul className="list-disc pl-8 mb-10 text-[#333333] text-[1.125rem] space-y-3 leading-[1.8]" {...props} />,
-                                    ol: ({ node, ...props }) => <ol className="list-decimal pl-8 mb-10 text-[#333333] text-[1.125rem] space-y-3 leading-[1.8]" {...props} />,
-                                    li: ({ node, ...props }) => <li className="" {...props} />,
-                                    blockquote: ({ node, ...props }) => (
-                                        <blockquote className="bg-slate-50 border-l-8 border-brand-gold p-8 my-12 rounded-r-xl shadow-sm italic text-slate-700 font-medium leading-[1.8]">
-                                            {props.children}
-                                        </blockquote>
-                                    ),
-                                    img: ({ node, ...props }) => (
-                                        <figure className="my-14 flex flex-col items-center">
-                                            <img className="w-full rounded-2xl shadow-xl object-cover max-h-[550px]" {...props} />
-                                            {props.alt && <figcaption className="text-sm text-slate-500 mt-4 font-medium">{props.alt}</figcaption>}
-                                        </figure>
-                                    ),
-                                    hr: ({ node, ...props }) => <hr className="border-slate-200 my-16" {...props} />,
-                                    table: ({ node, ...props }) => <div className="overflow-x-auto my-12"><table className="w-full border-collapse border border-slate-200 shadow-sm rounded-lg" {...props} /></div>,
-                                    th: ({ node, ...props }) => <th className="bg-brand-navy text-white text-left px-6 py-4 font-semibold border border-slate-200 text-lg" {...props} />,
-                                    td: ({ node, ...props }) => <td className="px-6 py-4 border border-slate-200 text-[#333333] bg-white leading-[1.8]" {...props} />,
-                                    strong: ({ node, ...props }) => <strong className="font-bold text-brand-navy" {...props} />,
-                                    a: ({ node, ...props }) => <a className="text-brand-gold hover:underline font-bold transition-colors" {...props} />,
-                                }}
-                            >
-                                {article.content.replace(/\\n/g, '\n')}
-                            </ReactMarkdown>
-                        </motion.article>
+                            className="w-full prose prose-lg max-w-none
+                                prose-headings:text-brand-navy prose-headings:font-bold
+                                prose-h1:text-4xl prose-h1:mt-16 prose-h1:mb-10
+                                prose-h2:text-3xl prose-h2:mt-16 prose-h2:mb-8
+                                prose-h3:text-2xl prose-h3:mt-12 prose-h3:mb-6 prose-h3:border-l-4 prose-h3:border-brand-navy prose-h3:pl-4
+                                prose-p:text-[#333333] prose-p:leading-[1.8] prose-p:mb-8 prose-p:text-[1.125rem]
+                                prose-ul:list-disc prose-ul:pl-8 prose-ul:mb-10 prose-ul:space-y-3
+                                prose-ol:list-decimal prose-ol:pl-8 prose-ol:mb-10 prose-ol:space-y-3
+                                prose-blockquote:bg-slate-50 prose-blockquote:border-l-8 prose-blockquote:border-brand-gold prose-blockquote:p-8 prose-blockquote:my-12 prose-blockquote:rounded-r-xl prose-blockquote:shadow-sm prose-blockquote:italic
+                                prose-img:w-full prose-img:rounded-2xl prose-img:shadow-xl prose-img:object-cover prose-img:max-h-[550px]
+                                prose-table:w-full prose-table:border-collapse prose-table:shadow-sm
+                                prose-th:bg-brand-navy prose-th:text-white prose-th:px-6 prose-th:py-4 prose-th:font-semibold prose-th:text-lg
+                                prose-td:px-6 prose-td:py-4 prose-td:border prose-td:border-slate-200
+                                prose-strong:font-bold prose-strong:text-brand-navy
+                                prose-a:text-brand-gold prose-a:font-bold hover:prose-a:underline"
+                            style={{ wordBreak: 'keep-all' }}
+                            dangerouslySetInnerHTML={{ __html: article.content }}
+                        />
+
                     </div>
                 </div>
             </section >

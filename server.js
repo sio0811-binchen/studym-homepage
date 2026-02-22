@@ -242,46 +242,96 @@ app.get('/rss.xml', async (req, res) => {
     }
 });
 
-// 1. 블로그 목록 조회 (프론트엔드용)
+// ========== WordPress REST API 프록시 ==========
+const WP_API = 'https://wordpress-production-63d7.up.railway.app/wp-json/wp/v2';
+
+// WP 카테고리 캐시 (성능 최적화)
+let wpCategoryCache = {};
+async function getWpCategories() {
+    if (Object.keys(wpCategoryCache).length > 0) return wpCategoryCache;
+    try {
+        const res = await fetch(`${WP_API}/categories?per_page=100`);
+        const cats = await res.json();
+        wpCategoryCache = {};
+        cats.forEach(c => { wpCategoryCache[c.id] = c.name; });
+    } catch (e) { console.error('WP 카테고리 로드 실패:', e); }
+    return wpCategoryCache;
+}
+
+// WP 포스트 → 프론트엔드 포맷 변환
+function wpToFrontend(post, categories) {
+    const catName = post.categories && post.categories[0] ? (categories[post.categories[0]] || '교육 입시') : '교육 입시';
+    const featured = post._embedded && post._embedded['wp:featuredmedia'] && post._embedded['wp:featuredmedia'][0];
+    const thumbnail = featured ? featured.source_url : '';
+    const tagNames = post._embedded && post._embedded['wp:term'] && post._embedded['wp:term'][1]
+        ? post._embedded['wp:term'][1].map(t => t.name)
+        : [];
+
+    // HTML에서 텍스트만 추출 (excerpt용)
+    const excerptText = (post.excerpt?.rendered || '').replace(/<[^>]*>/g, '').trim().substring(0, 200);
+
+    // 본문 글자 수로 읽기 시간 추정
+    const contentText = (post.content?.rendered || '').replace(/<[^>]*>/g, '');
+    const readMinutes = Math.max(1, Math.ceil(contentText.length / 500));
+
+    return {
+        id: String(post.id),
+        title: post.title?.rendered || '',
+        slug: post.slug || '',
+        category: catName,
+        excerpt: excerptText,
+        content: post.content?.rendered || '',
+        author: 'Study M 교육연구소',
+        readTime: `${readMinutes}분`,
+        tags: tagNames,
+        thumbnail: thumbnail,
+        date: post.date ? post.date.split('T')[0] : ''
+    };
+}
+
+// 1. 블로그 목록 조회 (WordPress 프록시)
 app.get('/api/blog/', async (req, res) => {
     try {
-        const result = await pool.query('SELECT id, title, slug, category, excerpt, author, read_time as "readTime", tags, thumbnail, to_char(created_at, \'YYYY-MM-DD\') as date FROM blogs ORDER BY created_at DESC');
-
-        const rows = result.rows.map(row => {
-            let parsedTags = [];
-            if (row.tags) {
-                try { parsedTags = typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags; }
-                catch { parsedTags = typeof row.tags === 'string' ? row.tags.split(',') : [row.tags]; }
-            }
-            return { ...row, tags: parsedTags };
-        });
-        res.json(rows);
+        const categories = await getWpCategories();
+        const wpRes = await fetch(`${WP_API}/posts?per_page=100&_embed`);
+        if (!wpRes.ok) throw new Error(`WP API Error: ${wpRes.status}`);
+        const posts = await wpRes.json();
+        const result = posts.map(p => wpToFrontend(p, categories));
+        res.json(result);
     } catch (error) {
-        console.error('블로그 목록 조회 오류:', error);
-        res.status(500).json({ error: error.message });
+        console.error('WP 블로그 목록 조회 오류:', error);
+        // Fallback: PostgreSQL
+        try {
+            const pgResult = await pool.query('SELECT id, title, slug, category, excerpt, author, read_time as "readTime", tags, thumbnail, to_char(created_at, \'YYYY-MM-DD\') as date FROM blogs ORDER BY created_at DESC');
+            res.json(pgResult.rows);
+        } catch (pgErr) {
+            res.status(500).json({ error: error.message });
+        }
     }
 });
 
-// 2. 블로그 상세 조회 (프론트엔드용)
+// 2. 블로그 상세 조회 (WordPress 프록시)
 app.get('/api/blog/:slug', async (req, res) => {
     try {
         const { slug } = req.params;
-        const result = await pool.query('SELECT id, title, slug, category, excerpt, content, author, read_time as "readTime", tags, thumbnail, to_char(created_at, \'YYYY-MM-DD\') as date FROM blogs WHERE slug = $1', [slug]);
-        if (result.rows.length === 0) {
+        const categories = await getWpCategories();
+        const wpRes = await fetch(`${WP_API}/posts?slug=${encodeURIComponent(slug)}&_embed`);
+        if (!wpRes.ok) throw new Error(`WP API Error: ${wpRes.status}`);
+        const posts = await wpRes.json();
+        if (posts.length === 0) {
             return res.status(404).json({ error: '블로그 글을 찾을 수 없습니다.' });
         }
-
-        const row = result.rows[0];
-        let parsedTags = [];
-        if (row.tags) {
-            try { parsedTags = typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags; }
-            catch { parsedTags = typeof row.tags === 'string' ? row.tags.split(',') : [row.tags]; }
-        }
-
-        res.json({ ...row, tags: parsedTags });
+        res.json(wpToFrontend(posts[0], categories));
     } catch (error) {
-        console.error('블로그 상세 조회 오류:', error);
-        res.status(500).json({ error: error.message });
+        console.error('WP 블로그 상세 조회 오류:', error);
+        // Fallback: PostgreSQL
+        try {
+            const pgResult = await pool.query('SELECT id, title, slug, category, excerpt, content, author, read_time as "readTime", tags, thumbnail, to_char(created_at, \'YYYY-MM-DD\') as date FROM blogs WHERE slug = $1', [req.params.slug]);
+            if (pgResult.rows.length === 0) return res.status(404).json({ error: '블로그 글을 찾을 수 없습니다.' });
+            res.json(pgResult.rows[0]);
+        } catch (pgErr) {
+            res.status(500).json({ error: error.message });
+        }
     }
 });
 
