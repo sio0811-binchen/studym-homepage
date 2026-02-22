@@ -107,7 +107,7 @@
   padding: 2rem;
   margin: 3rem 0;
   border-radius: 0 1rem 1rem 0;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   font-style: italic;
   color: #475569;
 }
@@ -120,9 +120,10 @@
   width: 100%;
   border-collapse: collapse;
   margin: 2.5rem 0;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   border-radius: 0.5rem;
   overflow: hidden;
+  table-layout: fixed;
 }
 
 .wp-content th {
@@ -132,12 +133,16 @@
   padding: 1rem 1.5rem;
   font-weight: 600;
   font-size: 1rem;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .wp-content td {
   padding: 1rem 1.5rem;
   border: 1px solid #e2e8f0;
   background-color: white;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .wp-content tr:nth-child(even) td {
@@ -147,7 +152,7 @@
 .wp-content img {
   width: 100%;
   border-radius: 1rem;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   margin: 2.5rem 0;
   max-height: 550px;
   object-fit: cover;
