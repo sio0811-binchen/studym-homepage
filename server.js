@@ -273,10 +273,6 @@ function wpToFrontend(post, categories) {
     // HTML에서 텍스트만 추출 (excerpt용)
     const excerptText = (post.excerpt?.rendered || '').replace(/<[^>]*>/g, '').trim().substring(0, 200);
 
-    // 본문 글자 수로 읽기 시간 추정
-    const contentText = (post.content?.rendered || '').replace(/<[^>]*>/g, '');
-    const readMinutes = Math.max(1, Math.ceil(contentText.length / 500));
-
     return {
         id: String(post.id),
         title: post.title?.rendered || '',
@@ -285,7 +281,6 @@ function wpToFrontend(post, categories) {
         excerpt: excerptText,
         content: post.content?.rendered || '',
         author: 'Study M 교육연구소',
-        readTime: `${readMinutes}분`,
         tags: tagNames,
         thumbnail: thumbnail,
         date: post.date ? post.date.split('T')[0] : ''
