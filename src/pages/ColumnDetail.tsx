@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { Calendar, Eye, ArrowLeft, Tag } from 'lucide-react';
+import { Calendar, ArrowLeft, Tag } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
@@ -120,10 +120,6 @@ const ColumnDetail = () => {
                                     <Calendar className="w-5 h-5" />
                                     {article.date}
                                 </span>
-                                <span className="flex items-center gap-2">
-                                    <Eye className="w-5 h-5" />
-                                    {article.readTime}
-                                </span>
                                 <span className="text-slate-400">
                                     by {article.author}
                                 </span>
@@ -212,7 +208,6 @@ const ColumnDetail = () => {
                                             </p>
                                             <div className="flex items-center gap-4 mt-4 text-slate-500 text-xs">
                                                 <span>{related.date}</span>
-                                                <span>{related.readTime}</span>
                                             </div>
                                         </Link>
                                     ))}

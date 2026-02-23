@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Eye, User } from 'lucide-react';
+import { Calendar, User } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import { useSEO } from '../hooks/useSEO';
@@ -125,15 +125,10 @@ const EducationColumn = () => {
 
                                         {/* Content container */}
                                         <div className="flex flex-col flex-grow p-6">
-                                            {/* Meta info row */}
-                                            <div className="flex items-center justify-between text-xs text-slate-500 mb-3">
+                                            <div className="flex items-center justify-start text-xs text-slate-500 mb-3">
                                                 <div className="flex items-center space-x-1">
                                                     <Calendar className="w-3.5 h-3.5" />
                                                     <span>{column.date}</span>
-                                                </div>
-                                                <div className="flex items-center space-x-1">
-                                                    <Eye className="w-3.5 h-3.5" />
-                                                    <span>{column.readTime || '5분'}</span>
                                                 </div>
                                             </div>
 
