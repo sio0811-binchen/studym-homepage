@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Calendar, User } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
+import AdBanner from '../components/ads/AdBanner';
 import { useSEO } from '../hooks/useSEO';
 
 const EducationColumn = () => {
@@ -169,6 +170,11 @@ const EducationColumn = () => {
                         {/* Total Count */}
                         <div className="mt-8 text-center text-sm text-slate-500">
                             총 <span className="font-bold text-brand-navy">{filteredColumns.length}</span>개의 글
+                        </div>
+
+                        {/* 광고 - 목록 하단 */}
+                        <div className="mt-10">
+                            <AdBanner format="auto" />
                         </div>
                     </div>
                 </div>

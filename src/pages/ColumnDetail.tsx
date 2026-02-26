@@ -4,6 +4,7 @@ import { Calendar, ArrowLeft, Tag } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
+import AdBanner from '../components/ads/AdBanner';
 import { useSEO } from '../hooks/useSEO';
 
 
@@ -144,6 +145,13 @@ const ColumnDetail = () => {
                 </div>
             </section>
 
+            {/* 광고 - 본문 상단 */}
+            <div className="container mx-auto px-6 pt-8">
+                <div className="max-w-3xl mx-auto">
+                    <AdBanner format="auto" className="mb-4" />
+                </div>
+            </div>
+
             {/* Content - 마크다운 렌더링 */}
             <section className="py-20">
                 <div className="container mx-auto px-6">
@@ -160,6 +168,13 @@ const ColumnDetail = () => {
                     </div>
                 </div>
             </section >
+
+            {/* 광고 - 본문 하단 */}
+            <div className="container mx-auto px-6 pb-8">
+                <div className="max-w-3xl mx-auto">
+                    <AdBanner format="auto" className="mt-4" />
+                </div>
+            </div>
 
             {/* CTA */}
             < section className="py-20 bg-brand-gold/5 border-y border-brand-gold/20" >

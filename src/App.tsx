@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { initGA, logPageView } from './utils/analytics';
+import { useCanonical } from './hooks/useSEO';
 
 // Existing Pages
 import Home from './pages/Home';
@@ -33,9 +34,12 @@ import PaymentFailPage from './pages/PaymentFailPage';
 import PaymentTestPage from './pages/PaymentTestPage';
 import ErrorBoundary from './components/ErrorBoundary';
 
-// Router wrapper for page tracking
+// Router wrapper for page tracking & SEO canonical
 function RouterTracker() {
   const location = useLocation();
+
+  // 모든 페이지 전환 시 canonical URL 자동 갱신 (Search Console 색인 문제 해결)
+  useCanonical();
 
   useEffect(() => {
     logPageView(location.pathname + location.search);
