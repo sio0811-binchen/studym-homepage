@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { initGA, logPageView } from './utils/analytics';
 import { useCanonical } from './hooks/useSEO';
 
@@ -98,6 +98,12 @@ function App() {
             <Route path="/pay/:token" element={<PaymentPage />} />
             <Route path="/pay/:token/success" element={<PaymentSuccessPage />} />
             <Route path="/pay/:token/fail" element={<PaymentFailPage />} />
+
+            {/* Legacy redirects - Google Search Console 색인 문제 해결 */}
+            <Route path="/column/:slug" element={<Navigate to="/blog/:slug" replace />} />
+
+            {/* 404 - 없는 페이지는 홈으로 리다이렉트 */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
       </ErrorBoundary>
