@@ -162,8 +162,37 @@ const ColumnDetail = () => {
                             transition={{ delay: 0.2 }}
                             className="w-full wp-content"
                             style={{ wordBreak: 'keep-all' }}
-                            dangerouslySetInnerHTML={{ __html: article.content }}
-                        />
+                        >
+                            {/* 본문 중간 삽입 광고 (In-article) 로직 */}
+                            {(() => {
+                                const html = article.content;
+                                const paragraphs = html.split('</p>');
+
+                                // 문단 수가 너무 적으면 통째로 렌더링
+                                if (paragraphs.length < 5) {
+                                    return <div dangerouslySetInnerHTML={{ __html: html }} />;
+                                }
+
+                                // 중간 지점과 3/4 지점 계산
+                                const midIndex = Math.floor(paragraphs.length / 2);
+
+                                const firstHalf = paragraphs.slice(0, midIndex).join('</p>') + '</p>';
+                                const secondHalf = paragraphs.slice(midIndex).join('</p>');
+
+                                return (
+                                    <>
+                                        <div dangerouslySetInnerHTML={{ __html: firstHalf }} />
+
+                                        {/* 콘텐츠 내 삽입 광고 */}
+                                        <div className="my-12 w-full">
+                                            <AdBanner format="in-article" />
+                                        </div>
+
+                                        <div dangerouslySetInnerHTML={{ __html: secondHalf }} />
+                                    </>
+                                );
+                            })()}
+                        </motion.article>
 
                     </div>
                 </div>
@@ -199,7 +228,7 @@ const ColumnDetail = () => {
             {/* Related Articles */}
             {
                 relatedArticles.length > 0 && (
-                    <section className="py-20">
+                    <section className="py-20 bg-white">
                         <div className="container mx-auto px-6">
                             <div className="max-w-4xl mx-auto">
                                 <h2 className="text-3xl font-bold text-brand-navy mb-8">
@@ -226,6 +255,11 @@ const ColumnDetail = () => {
                                             </div>
                                         </Link>
                                     ))}
+                                </div>
+
+                                {/* 광고 - 멀티플렉스 (관련 글 하단) */}
+                                <div className="mt-12">
+                                    <AdBanner format="multiplex" className="w-full" />
                                 </div>
                             </div>
                         </div>

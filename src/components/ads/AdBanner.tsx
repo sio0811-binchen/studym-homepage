@@ -9,8 +9,8 @@ declare global {
 interface AdBannerProps {
   /** 광고 슬롯 ID (애드센스 대시보드에서 생성) */
   slot?: string;
-  /** 광고 포맷: auto(반응형), horizontal(가로배너), rectangle(사각형) */
-  format?: 'auto' | 'horizontal' | 'rectangle';
+  /** 광고 포맷: auto(반응형), horizontal(가로배너), rectangle(사각형), in-article(본문내), multiplex(격자형) */
+  format?: 'auto' | 'horizontal' | 'rectangle' | 'in-article' | 'multiplex';
   /** 추가 CSS 클래스 */
   className?: string;
 }
@@ -58,6 +58,7 @@ const AdBanner = ({ slot, format = 'auto', className = '' }: AdBannerProps) => {
     display: 'block',
     ...(format === 'horizontal' && { width: '100%', height: '90px' }),
     ...(format === 'rectangle' && { width: '300px', height: '250px', margin: '0 auto' }),
+    ...(format === 'in-article' && { textAlign: 'center', margin: '2rem 0' }),
   };
 
   return (
@@ -65,10 +66,11 @@ const AdBanner = ({ slot, format = 'auto', className = '' }: AdBannerProps) => {
       <ins
         className="adsbygoogle"
         style={adStyle}
+        data-ad-layout={format === 'in-article' ? 'in-article' : undefined}
+        data-ad-format={format === 'multiplex' ? 'autorelaxed' : (format === 'auto' ? 'auto' : undefined)}
         data-ad-client="ca-pub-9463089363313174"
         data-ad-slot={slot}
-        data-ad-format={format === 'auto' ? 'auto' : undefined}
-        data-full-width-responsive={format === 'auto' ? 'true' : undefined}
+        data-full-width-responsive={format === 'auto' || format === 'in-article' ? 'true' : undefined}
       />
     </div>
   );

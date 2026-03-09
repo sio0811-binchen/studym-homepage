@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "start": "node server.js",
+    "start": "node server-modular.js",
+    "start:legacy": "node server.legacy.js",
     "start:static": "serve -s dist -l $PORT",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
