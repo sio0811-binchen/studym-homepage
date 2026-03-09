@@ -87,6 +87,39 @@ export async function cancelPayment(paymentKey, cancelReason) {
 }
 
 /**
+ * 결제 부분 취소
+ *
+ * @param {string} paymentKey - 결제 키
+ * @param {number} cancelAmount - 취소 금액
+ * @param {string} cancelReason - 취소 사유
+ */
+export async function partialCancelPayment(paymentKey, cancelAmount, cancelReason) {
+    try {
+        const headers = getTossAuthHeader();
+
+        const response = await axios.post(
+            `${TOSS_API_URL}/v1/payments/${paymentKey}/cancel`,
+            {
+                cancelReason,
+                cancelAmount
+            },
+            { headers }
+        );
+
+        return {
+            success: true,
+            data: response.data
+        };
+    } catch (error) {
+        console.error('부분 취소 실패:', error.response?.data || error.message);
+        return {
+            success: false,
+            error: error.response?.data || error.message
+        };
+    }
+}
+
+/**
  * 결제 조회
  *
  * @param {string} paymentKey - 결제 키
@@ -148,6 +181,7 @@ export async function createPaymentLink(options) {
 export default {
     confirmPayment,
     cancelPayment,
+    partialCancelPayment,
     getPayment,
     createPaymentLink
 };

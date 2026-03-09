@@ -12,7 +12,7 @@ export interface Payment {
     product_type: string;
     product_type_display: string;
     amount: number;
-    status: 'PENDING' | 'PAID' | 'FAILED' | 'CANCELED' | 'MANUAL';
+    status: 'PENDING' | 'PAID' | 'COMPLETED' | 'FAILED' | 'CANCELED' | 'MANUAL';
     status_display: string;
     days?: number;
     start_date?: string;
@@ -20,6 +20,8 @@ export interface Payment {
     manual_note?: string;
     created_at: string;
     paid_at?: string;
+    payment_key?: string | null;
+    receipt_url?: string | null;
     payment_link?: {
         token: string;
         url: string;
@@ -74,6 +76,17 @@ export const completePaymentManually = async (paymentId: number, note?: string):
 export const cancelPayment = async (paymentId: number): Promise<Payment> => {
     const response = await client.post(
         `/api/payments/${paymentId}/cancel/?admin_password=${ADMIN_PASSWORD}`
+    );
+    return response.data;
+};
+
+/**
+ * Partial cancel payment
+ */
+export const partialCancelPayment = async (paymentId: number, amount: number, reason?: string): Promise<Payment> => {
+    const response = await client.post(
+        `/api/payments/${paymentId}/partial_cancel/?admin_password=${ADMIN_PASSWORD}`,
+        { cancel_amount: amount, cancel_reason: reason || '' }
     );
     return response.data;
 };

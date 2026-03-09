@@ -21,7 +21,8 @@ const router = Router();
 router.get('/', optionalAdmin, asyncHandler(async (req, res) => {
     const result = await query(
         `SELECT id, order_id, student_name, student_phone, parent_phone,
-                product_type, amount, discount_amount, status, created_at
+                product_type, amount, discount_amount, status, created_at,
+                payment_key, receipt_url, paid_at, manual_note
          FROM payments
          ORDER BY created_at DESC
          LIMIT 100`
@@ -183,6 +184,67 @@ router.post('/:id/cancel/', requireAdmin, asyncHandler(async (req, res) => {
     );
 
     res.json({ success: true });
+}));
+
+/**
+ * POST /api/payments/:id/partial_cancel/
+ * 결제 부분 취소
+ */
+router.post('/:id/partial_cancel/', requireAdmin, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { cancel_amount, cancel_reason } = req.body;
+
+    if (!cancel_amount || cancel_amount <= 0) {
+        throw Errors.BadRequest('취소 금액이 필요합니다.');
+    }
+
+    // 결제 정보 조회
+    const paymentResult = await query(
+        `SELECT * FROM payments WHERE id = $1`,
+        [id]
+    );
+
+    if (paymentResult.rows.length === 0) {
+        throw Errors.NotFound('결제 정보');
+    }
+
+    const payment = paymentResult.rows[0];
+
+    if (cancel_amount > payment.amount) {
+        throw Errors.BadRequest('취소 금액이 결제 금액을 초과합니다.');
+    }
+
+    // Toss 부분 취소
+    if (payment.payment_key) {
+        const tossResult = await tossService.partialCancelPayment(
+            payment.payment_key,
+            cancel_amount,
+            cancel_reason || '부분 취소'
+        );
+
+        if (!tossResult.success) {
+            throw Errors.BadRequest(`부분 취소 실패: ${tossResult.error}`);
+        }
+
+        // DB 업데이트 - 금액 차감
+        const newAmount = payment.amount - cancel_amount;
+        const newStatus = newAmount === 0 ? 'CANCELLED' : 'COMPLETED';
+
+        const dbResult = await query(
+            `UPDATE payments
+             SET amount = $1,
+                 status = CASE WHEN $1 = 0 THEN 'CANCELLED' ELSE status END,
+                 cancel_amount = COALESCE(cancel_amount, 0) + $2,
+                 cancel_reason = $3
+             WHERE id = $4
+             RETURNING *`,
+            [newAmount, cancel_amount, cancel_reason, id]
+        );
+
+        res.json({ success: true, payment: dbResult.rows[0] });
+    } else {
+        throw Errors.BadRequest('결제 키가 없어 취소할 수 없습니다.');
+    }
 }));
 
 /**

@@ -8,6 +8,7 @@ import {
     createPayment,
     completePaymentManually,
     cancelPayment,
+    partialCancelPayment,
     regeneratePaymentLink,
     fetchPaymentStatistics,
 } from '../api/payments';
@@ -23,7 +24,9 @@ import {
     Loader2,
     TrendingUp,
     Clock,
-    CheckCircle
+    CheckCircle,
+    FileText,
+    MinusCircle
 } from 'lucide-react';
 
 const PRODUCT_TYPES = [
@@ -37,6 +40,9 @@ const PaymentManagement: React.FC = () => {
     const queryClient = useQueryClient();
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showManualCompleteModal, setShowManualCompleteModal] = useState<Payment | null>(null);
+    const [showPartialCancelModal, setShowPartialCancelModal] = useState<Payment | null>(null);
+    const [partialCancelAmount, setPartialCancelAmount] = useState<number>(0);
+    const [partialCancelReason, setPartialCancelReason] = useState<string>('');
     const [manualNote, setManualNote] = useState('');
 
     // Fetch payments
@@ -77,6 +83,18 @@ const PaymentManagement: React.FC = () => {
         mutationFn: cancelPayment,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['payments'] });
+        },
+    });
+
+    // Partial cancel mutation
+    const partialCancelMutation = useMutation({
+        mutationFn: ({ id, amount, reason }: { id: number; amount: number; reason: string }) =>
+            partialCancelPayment(id, amount, reason),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['payments'] });
+            setShowPartialCancelModal(null);
+            setPartialCancelAmount(0);
+            setPartialCancelReason('');
         },
     });
 
@@ -266,18 +284,53 @@ const PaymentManagement: React.FC = () => {
                                                     >
                                                         <Check className="h-4 w-4" />
                                                     </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            if (confirm('정말 취소하시겠습니까?')) {
-                                                                cancelMutation.mutate(payment.id);
-                                                            }
-                                                        }}
-                                                        className="p-1 text-gray-500 hover:text-red-600"
-                                                        title="취소"
-                                                    >
-                                                        <X className="h-4 w-4" />
-                                                    </button>
                                                 </>
+                                            )}
+
+                                            {/* 영수증 버튼 - PAID 상태면 항상 표시 */}
+                                            {(payment.status === 'PAID' || payment.status === 'COMPLETED') && (
+                                                <a
+                                                    href={payment.receipt_url || `https://dashboard.tosspayments.com/receipt/${payment.payment_key}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-semibold border border-blue-200 rounded px-2 py-1 hover:bg-blue-50"
+                                                    title="영수증 보기"
+                                                >
+                                                    <FileText className="h-3 w-3" />
+                                                    영수증
+                                                </a>
+                                            )}
+
+                                            {/* 부분취소 버튼 - PAID 상태만 */}
+                                            {(payment.status === 'PAID' || payment.status === 'COMPLETED') && (
+                                                <button
+                                                    onClick={() => {
+                                                        setPartialCancelAmount(0);
+                                                        setPartialCancelReason('');
+                                                        setShowPartialCancelModal(payment);
+                                                    }}
+                                                    className="flex items-center gap-1 text-orange-600 hover:text-orange-800 text-xs font-semibold border border-orange-200 rounded px-2 py-1 hover:bg-orange-50"
+                                                    title="부분취소"
+                                                >
+                                                    <MinusCircle className="h-3 w-3" />
+                                                    부분취소
+                                                </button>
+                                            )}
+
+                                            {/* 전체취소 버튼 */}
+                                            {payment.status !== 'CANCELED' && (
+                                                <button
+                                                    onClick={() => {
+                                                        if (confirm('정말 전체 취소하시겠습니까?')) {
+                                                            cancelMutation.mutate(payment.id);
+                                                        }
+                                                    }}
+                                                    className="flex items-center gap-1 text-red-600 hover:text-red-800 text-xs font-semibold border border-red-200 rounded px-2 py-1 hover:bg-red-50"
+                                                    title="전체 취소"
+                                                >
+                                                    <X className="h-3 w-3" />
+                                                    전체취소
+                                                </button>
                                             )}
                                         </div>
                                     </td>
@@ -328,6 +381,72 @@ const PaymentManagement: React.FC = () => {
                                 className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
                             >
                                 {completeMutation.isPending ? '처리중...' : '완료 처리'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Partial Cancel Modal */}
+            {showPartialCancelModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                        <h3 className="text-lg font-bold mb-2 text-orange-600">부분 취소</h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                            {showPartialCancelModal.student_name}님의 결제
+                        </p>
+                        <div className="bg-orange-50 rounded-lg p-3 mb-4">
+                            <p className="text-sm text-gray-600">결제 금액</p>
+                            <p className="text-xl font-bold text-orange-700">{formatAmount(showPartialCancelModal.amount)}</p>
+                        </div>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">취소 금액 *</label>
+                            <input
+                                type="number"
+                                value={partialCancelAmount}
+                                onChange={(e) => setPartialCancelAmount(parseInt(e.target.value) || 0)}
+                                className="w-full border rounded-lg p-3"
+                                placeholder="취소할 금액 입력"
+                                max={showPartialCancelModal.amount}
+                                min={1}
+                            />
+                            {partialCancelAmount > 0 && (
+                                <p className="text-sm text-gray-500 mt-1">
+                                    취소 후 잔액: {formatAmount(showPartialCancelModal.amount - partialCancelAmount)}
+                                </p>
+                            )}
+                        </div>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">취소 사유</label>
+                            <input
+                                type="text"
+                                value={partialCancelReason}
+                                onChange={(e) => setPartialCancelReason(e.target.value)}
+                                className="w-full border rounded-lg p-3"
+                                placeholder="취소 사유 입력 (선택)"
+                            />
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowPartialCancelModal(null);
+                                    setPartialCancelAmount(0);
+                                    setPartialCancelReason('');
+                                }}
+                                className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
+                            >
+                                닫기
+                            </button>
+                            <button
+                                onClick={() => partialCancelMutation.mutate({
+                                    id: showPartialCancelModal.id,
+                                    amount: partialCancelAmount,
+                                    reason: partialCancelReason
+                                })}
+                                disabled={partialCancelMutation.isPending || partialCancelAmount <= 0 || partialCancelAmount > showPartialCancelModal.amount}
+                                className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {partialCancelMutation.isPending ? '처리중...' : '부분 취소'}
                             </button>
                         </div>
                     </div>
