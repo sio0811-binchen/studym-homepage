@@ -10,6 +10,13 @@ Sitemap: https://studym.co.kr/sitemap.xml
 # Disallow admin and internal pages
 Disallow: /admin
 Disallow: /manager
+Disallow: /pay/
+
+# 존재하지 않는 레거시 URL 차단 (색인 오류 방지)
+Disallow: /guide
+Disallow: /columns
+Disallow: /column/
+Disallow: /manual
 
 # UTM 파라미터가 있는 URL 차단 (중복 콘텐츠 방지)
 Disallow: /*?utm_*
