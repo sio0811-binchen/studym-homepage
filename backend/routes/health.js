@@ -3,7 +3,13 @@
  */
 
 import { Router } from 'express';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { query, getPool } from '../utils/database.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = Router();
 
@@ -24,6 +30,11 @@ router.get('/', async (req, res) => {
         dbStatus = `error: ${e.message}`;
     }
 
+    // SPA 상태 확인
+    const projectRoot = path.resolve(__dirname, '../../');
+    const indexPath = path.join(projectRoot, 'dist', 'index.html');
+    const spaStatus = fs.existsSync(indexPath) ? 'ok' : 'missing';
+
     res.json({
         status: 'ok',
         timestamp: new Date().toISOString(),
@@ -31,6 +42,11 @@ router.get('/', async (req, res) => {
         database: {
             status: dbStatus,
             latency: dbLatency ? `${dbLatency}ms` : null
+        },
+        spa: {
+            status: spaStatus,
+            indexHtml: spaStatus === 'ok' ? 'found' : 'not found',
+            path: spaStatus === 'ok' ? '/dist/index.html' : null
         },
         memory: {
             used: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,

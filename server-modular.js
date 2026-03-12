@@ -8,6 +8,28 @@
  * - 환경변수만 사용
  * - 중복 라우트 제거
  * - 통합 에러 처리
+ *
+ * ============================================================================
+ * ⚠️ 중요: Express 미들웨어 순서 가이드라인
+ * ============================================================================
+ *
+ * Express는 미들웨어를 위에서 아래로 순차적으로 실행합니다.
+ * 잘못된 순서는 SPA 라우팅 404 오류를 발생시킬 수 있습니다.
+ *
+ * 올바른 순서:
+ * 1. 기본 미들웨어 (cors, json, static 등)
+ * 2. API 라우트 (/api/*)
+ * 3. 정적 파일 서빙 (express.static)
+ * 4. 레거시 리다이렉트
+ * 5. SPA Fallback (app.get('*'))  ← 반드시 에러 핸들러 앞에!
+ * 6. 에러 핸들러 (notFoundHandler, globalErrorHandler)
+ *
+ * ❌ 절대 하지 말 것:
+ * - notFoundHandler를 SPA fallback 앞에 배치
+ * - SPA fallback 없이 에러 핸들러만 등록
+ *
+ * 참고: 2026-03-12 SPA 라우팅 404 버그 수정 이력
+ * ============================================================================
  */
 
 import express from 'express';
@@ -203,6 +225,9 @@ app.get('/programs/deep-focus-term', (req, res) => res.redirect(301, '/programs/
 // ========== SPA Fallback (API 라우트 이후, 에러 처리 이전) ==========
 // React Router를 위한 클라이언트 사이드 라우팅 지원
 // 모든 비-API 요청에 대해 index.html 반환
+//
+// ⚠️ 가이드라인: 이 블록은 반드시 notFoundHandler/globalErrorHandler 앞에 위치해야 합니다!
+// 참고: 2026-03-12 버그 - 에러 핸들러가 앞에 있어 SPA 라우트가 404 반환
 app.get('*', (req, res, next) => {
     // API 요청은 404 핸들러로 전달
     if (req.path.startsWith('/api/')) {
@@ -228,18 +253,78 @@ app.get('*', (req, res, next) => {
 });
 
 // ========== API 에러 처리 ==========
+// ⚠️ 가이드라인: 이 핸들러들은 반드시 SPA fallback 뒤에 위치해야 합니다!
+// SPA fallback이 없으면 모든 라우트가 404로 처리됩니다.
 app.use(notFoundHandler);
 app.use(globalErrorHandler);
 
+// ========== SPA 라우팅 검증 (가이드레일) ==========
+function validateSpaRouting() {
+    const indexPath = path.join(__dirname, 'dist', 'index.html');
+    const issues = [];
+
+    // 1. index.html 존재 확인
+    if (!fs.existsSync(indexPath)) {
+        issues.push('index.html not found in dist/');
+    }
+
+    // 2. dist 폴더 확인
+    const distPath = path.join(__dirname, 'dist');
+    if (!fs.existsSync(distPath)) {
+        issues.push('dist/ folder not found - run `npm run build` first');
+    }
+
+    // 3. 라우트 스택 검증 (SPA fallback이 에러 핸들러 앞에 있는지)
+    const routeStack = app._router?.stack || [];
+    let spaFallbackIndex = -1;
+    let errorHandlerIndex = -1;
+
+    routeStack.forEach((layer, index) => {
+        if (layer.route?.path === '*' && layer.route.methods.get) {
+            spaFallbackIndex = index;
+        }
+        // notFoundHandler는 4개 인자를 받는 미들웨어
+        if (layer.handle?.length === 4 && layer.handle.name === 'notFoundHandler') {
+            errorHandlerIndex = index;
+        }
+    });
+
+    if (spaFallbackIndex !== -1 && errorHandlerIndex !== -1) {
+        if (spaFallbackIndex > errorHandlerIndex) {
+            issues.push(`CRITICAL: SPA fallback (index ${spaFallbackIndex}) is AFTER error handler (index ${errorHandlerIndex})`);
+        }
+    }
+
+    return {
+        valid: issues.length === 0,
+        issues,
+        indexPath: fs.existsSync(indexPath) ? indexPath : null,
+        spaFallbackIndex,
+        errorHandlerIndex
+    };
+}
+
 // ========== 서버 시작 ==========
 setupDatabase().then(() => {
-    // SPA fallback 검증
-    const indexPath = path.join(__dirname, 'dist', 'index.html');
-    if (fs.existsSync(indexPath)) {
-        console.log(`✅ SPA index.html found: ${indexPath}`);
+    // SPA 라우팅 검증 (가이드레일)
+    const validation = validateSpaRouting();
+
+    console.log('========================================');
+    console.log('🔍 SPA Routing Validation');
+    console.log('========================================');
+
+    if (validation.valid) {
+        console.log('✅ SPA routing configuration: VALID');
+        console.log(`   index.html: ${validation.indexPath}`);
+        console.log(`   SPA Fallback position: ${validation.spaFallbackIndex}`);
+        console.log(`   Error Handler position: ${validation.errorHandlerIndex}`);
     } else {
-        console.error(`❌ SPA index.html NOT FOUND: ${indexPath}`);
-        console.error(`   __dirname: ${__dirname}`);
+        console.error('❌ SPA routing configuration: INVALID');
+        validation.issues.forEach((issue, i) => {
+            console.error(`   ${i + 1}. ${issue}`);
+        });
+        console.error('');
+        console.error('⚠️  SPA routes will return 404! Fix the issues above.');
     }
 
     app.listen(PORT, () => {
@@ -247,7 +332,7 @@ setupDatabase().then(() => {
         console.log(`StudyM Server running on port ${PORT}`);
         console.log(`Database: ${process.env.DATABASE_URL ? 'PostgreSQL' : 'In-Memory Fallback'}`);
         console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-        console.log(`SPA Fallback: ${fs.existsSync(indexPath) ? 'ENABLED' : 'MISSING index.html'}`);
+        console.log(`SPA Fallback: ${validation.valid ? '✅ ENABLED' : '❌ DISABLED'}`);
         console.log('========================================');
     });
 });
