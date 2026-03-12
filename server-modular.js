@@ -15,6 +15,7 @@ import cors from 'cors';
 import compression from 'compression';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 // Database
 import { initDatabase, query } from './backend/utils/database.js';
@@ -194,25 +195,59 @@ app.post('/api/payments/test_init', async (req, res) => {
 // ========== 정적 파일 서빙 ==========
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// ========== 에러 처리 ==========
+// ========== 레거시 URL 301 리다이렉트 (Google Search Console 중복 페이지 해결) ==========
+app.get('/columns', (req, res) => res.redirect(301, '/blog'));
+app.get('/column/:slug', (req, res) => res.redirect(301, `/blog/${req.params.slug}`));
+app.get('/programs/deep-focus-term', (req, res) => res.redirect(301, '/programs/standard'));
+
+// ========== SPA Fallback (API 라우트 이후, 에러 처리 이전) ==========
+// React Router를 위한 클라이언트 사이드 라우팅 지원
+// 모든 비-API 요청에 대해 index.html 반환
+app.get('*', (req, res, next) => {
+    // API 요청은 404 핸들러로 전달
+    if (req.path.startsWith('/api/')) {
+        return next();
+    }
+
+    // 정적 파일이 이미 express.static에서 처리됨
+    // SPA 라우팅을 위해 index.html 반환
+    const indexPath = path.join(__dirname, 'dist', 'index.html');
+
+    // 파일 존재 확인
+    if (!fs.existsSync(indexPath)) {
+        console.error(`[SPA Fallback] index.html not found at: ${indexPath}`);
+        console.error(`[SPA Fallback] __dirname: ${__dirname}`);
+        console.error(`[SPA Fallback] Files in dist: ${fs.existsSync(path.join(__dirname, 'dist')) ? fs.readdirSync(path.join(__dirname, 'dist')).join(', ') : 'dist not found'}`);
+        return res.status(500).json({
+            error: '서버 설정 오류: 앱 파일을 찾을 수 없습니다.',
+            code: 'SERVER_CONFIG_ERROR'
+        });
+    }
+
+    res.sendFile(indexPath);
+});
+
+// ========== API 에러 처리 ==========
 app.use(notFoundHandler);
 app.use(globalErrorHandler);
 
-// ========== SPA Fallback (API 라우트 이후) ==========
-app.get('*', (req, res) => {
-    // API 요청이 아닌 경우에만 SPA fallback
-    if (!req.path.startsWith('/api/')) {
-        res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-    }
-});
-
 // ========== 서버 시작 ==========
 setupDatabase().then(() => {
+    // SPA fallback 검증
+    const indexPath = path.join(__dirname, 'dist', 'index.html');
+    if (fs.existsSync(indexPath)) {
+        console.log(`✅ SPA index.html found: ${indexPath}`);
+    } else {
+        console.error(`❌ SPA index.html NOT FOUND: ${indexPath}`);
+        console.error(`   __dirname: ${__dirname}`);
+    }
+
     app.listen(PORT, () => {
         console.log('========================================');
         console.log(`StudyM Server running on port ${PORT}`);
         console.log(`Database: ${process.env.DATABASE_URL ? 'PostgreSQL' : 'In-Memory Fallback'}`);
         console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`SPA Fallback: ${fs.existsSync(indexPath) ? 'ENABLED' : 'MISSING index.html'}`);
         console.log('========================================');
     });
 });

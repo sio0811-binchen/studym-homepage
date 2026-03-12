@@ -76,9 +76,15 @@ export function globalErrorHandler(err, req, res, next) {
 
 /**
  * 404 핸들러
+ *
+ * 주의: 이 핸들러는 API 요청(/api/*)에만 사용됩니다.
+ * SPA 라우팅을 위해 server-modular.js의 SPA Fallback이 이 핸들러보다 먼저 실행됩니다.
  */
 export function notFoundHandler(req, res, next) {
-    next(Errors.NotFound(`경로 ${req.path}를 찾을 수 없습니다.`));
+    // API 요청이 아닌 경우 SPA fallback에서 처리되어야 함
+    // 이 곳에 도달했다면 라우팅 설정에 문제가 있는 것
+    console.warn(`[404] Unexpected non-API route reached notFoundHandler: ${req.method} ${req.path}`);
+    next(Errors.NotFound(`요청한 경로를 찾을 수 없습니다.`));
 }
 
 export default {
