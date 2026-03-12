@@ -83,8 +83,8 @@ export function globalErrorHandler(err, req, res, next) {
 export function notFoundHandler(req, res, next) {
     // API 요청이 아닌 경우 SPA fallback에서 처리되어야 함
     // 이 곳에 도달했다면 라우팅 설정에 문제가 있는 것
-    console.warn(`[404] Unexpected non-API route reached notFoundHandler: ${req.method} ${req.path}`);
-    next(Errors.NotFound(`요청한 경로를 찾을 수 없습니다.`));
+    console.warn(`[404] API route not found: ${req.method} ${req.path}`);
+    next(Errors.NotFound(`API 엔드포인트`));
 }
 
 export default {
