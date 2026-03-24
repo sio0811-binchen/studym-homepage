@@ -184,7 +184,7 @@ const ConsultationManagement: React.FC = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/consultations/?admin_password=${ADMIN_PASSWORD}`);
+            const res = await fetch(`${API_BASE_URL}/api/consultations/?admin_secret=${ADMIN_PASSWORD}`);
             if (res.ok) {
                 const data = await res.json();
                 const consultationArray = Array.isArray(data) ? data : (data.results || []);
@@ -208,7 +208,7 @@ const ConsultationManagement: React.FC = () => {
     // 상태/메모 저장
     const saveConsultation = async (id: string, updates: Partial<ConsultationData>) => {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/consultations/${id}/?admin_password=${ADMIN_PASSWORD}`, {
+            const res = await fetch(`${API_BASE_URL}/api/consultations/${id}/?admin_secret=${ADMIN_PASSWORD}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updates)
@@ -233,7 +233,7 @@ const ConsultationManagement: React.FC = () => {
 
         try {
             const deletePromises = Array.from(selectedIds).map(id =>
-                fetch(`${API_BASE_URL}/api/consultations/${id}/?admin_password=${ADMIN_PASSWORD}`, {
+                fetch(`${API_BASE_URL}/api/consultations/${id}/?admin_secret=${ADMIN_PASSWORD}`, {
                     method: 'DELETE'
                 })
             );
