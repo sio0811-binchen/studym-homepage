@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { initGA, logPageView } from './utils/analytics';
 import { useCanonical } from './hooks/useSEO';
 
@@ -90,7 +90,6 @@ function App() {
             {/* Footer Pages */}
             <Route path="/about" element={<CompanyAbout />} />
             <Route path="/features" element={<Features />} />
-            <Route path="/features" element={<Features />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
 
 
@@ -100,8 +99,7 @@ function App() {
             <Route path="/pay/:token/success" element={<PaymentSuccessPage />} />
             <Route path="/pay/:token/fail" element={<PaymentFailPage />} />
 
-            {/* Legacy redirects - Google Search Console 색인 문제 해결 */}
-            <Route path="/column/:slug" element={<Navigate to="/blog/:slug" replace />} />
+            {/* Legacy redirects - 서버 측 301로 처리됨 (/columns, /column/:slug, /programs/deep-focus-term) */}
 
             {/* 404 - 존재하지 않는 페이지 (noindex) */}
             <Route path="*" element={<NotFound />} />

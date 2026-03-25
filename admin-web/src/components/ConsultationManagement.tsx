@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Download, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import client from '../api/client';
 
 interface ConsultationData {
     id: string;
@@ -24,24 +25,22 @@ const ConsultationManagement: React.FC = () => {
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-    // 데이터 불러오기
     const fetchData = async () => {
         setLoading(true);
         try {
             // 백엔드 API 호출 (임시 비밀번호 사용)
-            const res = await fetch('https://studym-homepage-production-a3c2.up.railway.app/api/consultations/?admin_password=studym2025');
-            if (res.ok) {
-                const data = await res.json();
-                const consultationArray = Array.isArray(data) ? data : (data.results || []);
-                setConsultations(consultationArray);
-            } else {
-                // 실패 시 로컬스토리지 폴백 (혹은 빈 배열)
-                console.log('Backend fetch failed, checking localStorage');
-                const localData = JSON.parse(localStorage.getItem('consultations') || '[]');
-                setConsultations(localData);
-            }
+            const res = await client.get('/api/consultations/?admin_password=studym2025');
+            const data = res.data;
+            const consultationArray = Array.isArray(data) ? data : (data.results || []);
+            setConsultations(consultationArray);
         } catch (error) {
             console.error('Failed to fetch consultations:', error);
+
+            // 실패 시 로컬스토리지 폴백 (혹은 빈 배열)
+            console.log('Backend fetch failed, checking localStorage');
+            const localData = JSON.parse(localStorage.getItem('consultations') || '[]');
+            setConsultations(localData);
+
             toast.error('데이터 조회 실패');
         } finally {
             setLoading(false);
@@ -55,13 +54,9 @@ const ConsultationManagement: React.FC = () => {
     // 상태 변경 요청
     const updateStatus = async (id: string, newStatus: string) => {
         try {
-            const res = await fetch(`https://studym-homepage-production-a3c2.up.railway.app/api/consultations/${id}/?admin_password=studym2025`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus })
+            await client.patch(`/api/consultations/${id}/?admin_password=studym2025`, {
+                status: newStatus
             });
-
-            if (!res.ok) throw new Error('API Error');
 
             setConsultations(prev => prev.map(item =>
                 String(item.id) === id ? { ...item, status: newStatus } : item
@@ -81,9 +76,7 @@ const ConsultationManagement: React.FC = () => {
 
         try {
             const deletePromises = Array.from(selectedIds).map(id =>
-                fetch(`https://studym-homepage-production-a3c2.up.railway.app/api/consultations/${id}/?admin_password=studym2025`, {
-                    method: 'DELETE'
-                })
+                client.delete(`/api/consultations/${id}/?admin_password=studym2025`)
             );
 
             await Promise.all(deletePromises);

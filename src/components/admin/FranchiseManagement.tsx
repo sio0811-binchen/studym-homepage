@@ -199,7 +199,7 @@ const FranchiseManagement: React.FC = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/franchise-inquiries/?admin_password=${ADMIN_PASSWORD}`);
+            const res = await fetch(`${API_BASE_URL}/api/franchise-inquiries/?admin_secret=${ADMIN_PASSWORD}`);
             if (res.ok) {
                 const data = await res.json();
                 const franchiseArray = Array.isArray(data) ? data : (data.results || []);
@@ -223,7 +223,7 @@ const FranchiseManagement: React.FC = () => {
     // 상태/메모 저장
     const saveFranchise = async (id: string, updates: Partial<FranchiseData>) => {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/franchise-inquiries/${id}/?admin_password=${ADMIN_PASSWORD}`, {
+            const res = await fetch(`${API_BASE_URL}/api/franchise-inquiries/${id}/?admin_secret=${ADMIN_PASSWORD}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updates)
@@ -250,7 +250,7 @@ const FranchiseManagement: React.FC = () => {
 
         try {
             const deletePromises = Array.from(selectedIds).map(id =>
-                fetch(`${API_BASE_URL}/api/franchise-inquiries/${id}/?admin_password=${ADMIN_PASSWORD}`, {
+                fetch(`${API_BASE_URL}/api/franchise-inquiries/${id}/?admin_secret=${ADMIN_PASSWORD}`, {
                     method: 'DELETE'
                 })
             );

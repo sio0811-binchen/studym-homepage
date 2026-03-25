@@ -14,9 +14,9 @@ import { Toaster } from 'react-hot-toast';
 interface Student {
     userId: string;
     name: string;
-    currentSubject?: string;
+    currentSubject?: string | null;
     status: string;
-    startTime?: string;
+    startTime?: string | null;
     todayTotalMinutes: number;
 }
 

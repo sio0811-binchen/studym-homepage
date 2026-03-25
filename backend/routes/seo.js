@@ -8,7 +8,7 @@ import { asyncHandler } from '../middleware/errorHandler.js';
 
 const router = Router();
 
-const BASE_URL = process.env.BASE_URL || 'https://www.studym.co.kr';
+const BASE_URL = process.env.BASE_URL || 'https://studym.co.kr';
 
 /**
  * GET /sitemap.xml
@@ -96,7 +96,7 @@ router.get('/rss.xml', asyncHandler(async (req, res) => {
     xml += '<rss version="2.0">\n';
     xml += '<channel>\n';
     xml += '  <title>Study M 교육연구소 칼럼</title>\n';
-    xml += `  <link>${BASE_URL}/columns</link>\n`;
+    xml += `  <link>${BASE_URL}/blog</link>\n`;
     xml += '  <description>Study M의 학부모 맞춤형 전문 교육 가이드</description>\n';
     xml += '  <language>ko</language>\n';
 

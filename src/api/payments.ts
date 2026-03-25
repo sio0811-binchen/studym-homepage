@@ -96,7 +96,7 @@ const SAMPLE_STATS: PaymentStatistics = {
  */
 export const fetchPayments = async (): Promise<Payment[]> => {
     try {
-        const response = await client.get(`/api/payments/?admin_password=${ADMIN_PASSWORD}`);
+        const response = await client.get(`/api/payments/?admin_secret=${ADMIN_PASSWORD}`);
         return response.data;
     } catch (error) {
         console.warn('Using sample payments data due to API error');
@@ -109,7 +109,7 @@ export const fetchPayments = async (): Promise<Payment[]> => {
  */
 export const createPayment = async (data: PaymentCreateData): Promise<Payment> => {
     try {
-        const response = await client.post(`/api/payments/?admin_password=${ADMIN_PASSWORD}`, data);
+        const response = await client.post(`/api/payments/?admin_secret=${ADMIN_PASSWORD}`, data);
         return response.data;
     } catch (error) {
         console.warn('Mocking create payment');
@@ -128,7 +128,7 @@ export const createPayment = async (data: PaymentCreateData): Promise<Payment> =
  */
 export const completePaymentManually = async (paymentId: number, note?: string): Promise<Payment> => {
     const response = await client.post(
-        `/api/payments/${paymentId}/manual_complete/?admin_password=${ADMIN_PASSWORD}`,
+        `/api/payments/${paymentId}/manual_complete/?admin_secret=${ADMIN_PASSWORD}`,
         { note: note || '수동 처리' }
     );
     return response.data;
@@ -139,7 +139,7 @@ export const completePaymentManually = async (paymentId: number, note?: string):
  */
 export const cancelPayment = async (paymentId: number, cancelReason?: string, cancelAmount?: number): Promise<Payment> => {
     const response = await client.post(
-        `/api/payments/${paymentId}/cancel/?admin_password=${ADMIN_PASSWORD}`,
+        `/api/payments/${paymentId}/cancel/?admin_secret=${ADMIN_PASSWORD}`,
         {
             cancelReason: cancelReason || '관리자 취소',
             cancelAmount: cancelAmount // 부분 취소 금액 (백엔드 지원 시 동작)
@@ -153,7 +153,7 @@ export const cancelPayment = async (paymentId: number, cancelReason?: string, ca
  */
 export const deletePayment = async (paymentId: number): Promise<void> => {
     await client.delete(
-        `/api/payments/${paymentId}/?admin_password=${ADMIN_PASSWORD}`
+        `/api/payments/${paymentId}/?admin_secret=${ADMIN_PASSWORD}`
     );
 };
 
@@ -162,7 +162,7 @@ export const deletePayment = async (paymentId: number): Promise<void> => {
  */
 export const regeneratePaymentLink = async (paymentId: number): Promise<{ token: string; url: string; expires_at: string }> => {
     const response = await client.post(
-        `/api/payments/${paymentId}/regenerate_link/?admin_password=${ADMIN_PASSWORD}`
+        `/api/payments/${paymentId}/regenerate_link/?admin_secret=${ADMIN_PASSWORD}`
     );
     return response.data;
 };
@@ -193,7 +193,7 @@ export interface PaymentStatistics {
 
 export const fetchPaymentStatistics = async (): Promise<PaymentStatistics> => {
     try {
-        const response = await client.get(`/api/payments/statistics/?admin_password=${ADMIN_PASSWORD}`);
+        const response = await client.get(`/api/payments/statistics/?admin_secret=${ADMIN_PASSWORD}`);
         return response.data;
     } catch (error) {
         console.warn('Using sample stats data due to API error');

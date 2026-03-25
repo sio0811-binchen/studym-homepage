@@ -32,6 +32,7 @@
  * ============================================================================
  */
 
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import compression from 'compression';
@@ -44,6 +45,7 @@ import { initDatabase, query } from './backend/utils/database.js';
 
 // Middleware
 import { globalErrorHandler, notFoundHandler } from './backend/middleware/errorHandler.js';
+import { injectSEOMeta, injectBlogPostMeta } from './backend/middleware/seoPrerender.js';
 
 // Routes
 import blogRoutes from './backend/routes/blog.js';
@@ -66,6 +68,16 @@ app.use(compression());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// ========== www → non-www 301 리다이렉트 (SEO 표준 도메인 통일) ==========
+app.use((req, res, next) => {
+    const host = req.hostname || req.headers.host;
+    if (host && host.startsWith('www.')) {
+        const nonWwwHost = host.replace(/^www\./, '');
+        return res.redirect(301, `https://${nonWwwHost}${req.originalUrl}`);
+    }
+    next();
+});
 
 // ========== 데이터베이스 초기화 ==========
 async function setupDatabase() {
@@ -224,22 +236,34 @@ app.get('/programs/deep-focus-term', (req, res) => res.redirect(301, '/programs/
 
 // ========== SPA Fallback (API 라우트 이후, 에러 처리 이전) ==========
 // React Router를 위한 클라이언트 사이드 라우팅 지원
-// 모든 비-API 요청에 대해 index.html 반환
+// ✅ SEO 개선: 경로별 메타 태그를 서버에서 주입하여 Googlebot 대응
 //
 // ⚠️ 가이드라인: 이 블록은 반드시 notFoundHandler/globalErrorHandler 앞에 위치해야 합니다!
 // 참고: 2026-03-12 버그 - 에러 핸들러가 앞에 있어 SPA 라우트가 404 반환
-app.get('*', (req, res, next) => {
+
+// index.html 템플릿을 메모리에 캐시 (매 요청마다 파일 읽기 방지)
+let cachedIndexHtml = null;
+function getIndexHtml() {
+    if (!cachedIndexHtml) {
+        const indexPath = path.join(__dirname, 'dist', 'index.html');
+        if (fs.existsSync(indexPath)) {
+            cachedIndexHtml = fs.readFileSync(indexPath, 'utf8');
+        }
+    }
+    return cachedIndexHtml;
+}
+
+app.get('*', async (req, res, next) => {
     // API 요청은 404 핸들러로 전달
     if (req.path.startsWith('/api/')) {
         return next();
     }
 
-    // 정적 파일이 이미 express.static에서 처리됨
-    // SPA 라우팅을 위해 index.html 반환
-    const indexPath = path.join(__dirname, 'dist', 'index.html');
+    const html = getIndexHtml();
 
     // 파일 존재 확인
-    if (!fs.existsSync(indexPath)) {
+    if (!html) {
+        const indexPath = path.join(__dirname, 'dist', 'index.html');
         console.error(`[SPA Fallback] index.html not found at: ${indexPath}`);
         console.error(`[SPA Fallback] __dirname: ${__dirname}`);
         console.error(`[SPA Fallback] Files in dist: ${fs.existsSync(path.join(__dirname, 'dist')) ? fs.readdirSync(path.join(__dirname, 'dist')).join(', ') : 'dist not found'}`);
@@ -249,7 +273,29 @@ app.get('*', (req, res, next) => {
         });
     }
 
-    res.sendFile(indexPath);
+    // ✅ SEO: 블로그 상세 페이지는 DB에서 포스트 정보를 조회하여 메타 태그 주입
+    const blogSlugMatch = req.path.match(/^\/blog\/([^\/]+)$/);
+    if (blogSlugMatch) {
+        try {
+            const slug = blogSlugMatch[1];
+            const result = await query(
+                `SELECT title, excerpt, slug, thumbnail FROM blogs WHERE slug = $1 AND status = 'published' LIMIT 1`,
+                [slug]
+            );
+            if (result.rows.length > 0) {
+                const seoHtml = injectBlogPostMeta(html, result.rows[0]);
+                res.set('Content-Type', 'text/html');
+                return res.send(seoHtml);
+            }
+        } catch (e) {
+            console.warn('[SEO] Blog post lookup failed:', e.message);
+        }
+    }
+
+    // ✅ SEO: 정적 페이지는 경로별 메타 매핑으로 주입
+    const seoHtml = injectSEOMeta(html, req.path);
+    res.set('Content-Type', 'text/html');
+    res.send(seoHtml);
 });
 
 // ========== API 에러 처리 ==========
