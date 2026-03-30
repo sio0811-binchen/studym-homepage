@@ -17,7 +17,7 @@ const BASE_URL = process.env.BASE_URL || 'https://studym.co.kr';
  * 경로별 메타데이터 정의
  * App.tsx의 라우트와 일치해야 합니다.
  */
-const PAGE_META = {
+export const PAGE_META = {
     '/': {
         title: 'STUDY M - 상위 1% 학습 경영 시스템',
         description: '데이터 기반 맞춤형 학습 관리로 상위 1% 성적 달성. 학생과 학부모가 함께 성장하는 STUDY M.',

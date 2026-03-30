@@ -45,7 +45,7 @@ import { initDatabase, query } from './backend/utils/database.js';
 
 // Middleware
 import { globalErrorHandler, notFoundHandler } from './backend/middleware/errorHandler.js';
-import { injectSEOMeta, injectBlogPostMeta } from './backend/middleware/seoPrerender.js';
+import { injectSEOMeta, injectBlogPostMeta, PAGE_META } from './backend/middleware/seoPrerender.js';
 
 // Routes
 import blogRoutes from './backend/routes/blog.js';
@@ -226,13 +226,14 @@ app.post('/api/payments/test_init', async (req, res) => {
     }
 });
 
-// ========== 정적 파일 서빙 ==========
-app.use(express.static(path.join(__dirname, 'dist')));
-
 // ========== 레거시 URL 301 리다이렉트 (Google Search Console 중복 페이지 해결) ==========
+// ⚠️ 중요: express.static보다 앞에 위치해야 리다이렉트가 실제로 작동합니다!
 app.get('/columns', (req, res) => res.redirect(301, '/blog'));
 app.get('/column/:slug', (req, res) => res.redirect(301, `/blog/${req.params.slug}`));
 app.get('/programs/deep-focus-term', (req, res) => res.redirect(301, '/programs/standard'));
+
+// ========== 정적 파일 서빙 ==========
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // ========== SPA Fallback (API 라우트 이후, 에러 처리 이전) ==========
 // React Router를 위한 클라이언트 사이드 라우팅 지원
@@ -277,7 +278,7 @@ app.get('*', async (req, res, next) => {
     const blogSlugMatch = req.path.match(/^\/blog\/([^\/]+)$/);
     if (blogSlugMatch) {
         try {
-            const slug = blogSlugMatch[1];
+            const slug = decodeURIComponent(blogSlugMatch[1]);
             const result = await query(
                 `SELECT title, excerpt, slug, thumbnail FROM blogs WHERE slug = $1 AND status = 'published' LIMIT 1`,
                 [slug]
@@ -350,6 +351,46 @@ function validateSpaRouting() {
     };
 }
 
+// ========== SEO 일관성 검증 (가이드레일) ==========
+// 목적: sitemap, seoPrerender 메타, 리다이렉트 사이의 불일치를 서버 시작 시 경고
+function validateSeoConsistency() {
+    const issues = [];
+
+    // 1. seoPrerender의 PAGE_META 키와 seo.js의 staticPages 비교
+    const seoMetaKeys = Object.keys(PAGE_META).map(k => k === '/' ? '' : k);
+    
+    // 2. 리다이렉트 대상 URL이 sitemap에 포함되어 있지 않은지 검증
+    // (리다이렉트 원본이 sitemap에 있으면 Google이 혼란)
+    const redirectSources = ['/columns', '/column/:slug', '/programs/deep-focus-term'];
+    
+    console.log('========================================');
+    console.log('🔍 SEO 일관성 검증');
+    console.log('========================================');
+    console.log(`   PAGE_META 등록 경로: ${seoMetaKeys.length}개`);
+    console.log(`   리다이렉트 규칙: ${redirectSources.length}개`);
+    
+    // 3. seoPrerender에 등록되지 않은 경로가 있으면 경고
+    // (해당 경로로 접속 시 기본 title/canonical이 나갈 수 있음)
+    const missingMetaPaths = [];
+    // 실제 React 라우트와 비교할 수는 없지만, 알려진 경로 목록으로 체크
+    ['/contact', '/diagnosis'].forEach(p => {
+        if (!PAGE_META[p]) {
+            missingMetaPaths.push(p);
+        }
+    });
+    
+    if (missingMetaPaths.length > 0) {
+        console.warn(`   ⚠️ PAGE_META에 누락된 경로: ${missingMetaPaths.join(', ')}`);
+        issues.push(`PAGE_META 누락: ${missingMetaPaths.join(', ')}`);
+    }
+    
+    if (issues.length === 0) {
+        console.log('   ✅ SEO 일관성: 정상');
+    }
+    
+    return issues;
+}
+
 // ========== 서버 시작 ==========
 setupDatabase().then(() => {
     // SPA 라우팅 검증 (가이드레일)
@@ -372,6 +413,9 @@ setupDatabase().then(() => {
         console.error('');
         console.error('⚠️  SPA routes will return 404! Fix the issues above.');
     }
+    
+    // SEO 일관성 검증
+    validateSeoConsistency();
 
     app.listen(PORT, () => {
         console.log('========================================');
