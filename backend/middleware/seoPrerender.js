@@ -59,14 +59,14 @@ export const PAGE_META = {
         keywords: '스터디엠 가맹, 관리형 독서실 프랜차이즈, 교육 프랜차이즈, 가맹 문의',
     },
     '/branches': {
-        title: '지점 안내 | STUDY M',
-        description: 'STUDY M 전국 지점 위치와 프로모션 정보를 확인하세요.',
-        keywords: '스터디엠 지점, 평촌 스터디카페, 관리형 독서실 위치',
+        title: '지점별 신규 등록 혜택 및 이벤트 | STUDY M',
+        description: 'STUDY M 각 지점에서 진행 중인 신규 등록 혜택, 프로모션, 한정 이벤트를 한눈에 확인하세요.',
+        keywords: '스터디엠 신규혜택, 관리형 스터디카페 프로모션, 평촌 스터디카페 이벤트, 등록 혜택',
     },
     '/locations': {
-        title: '오시는 길 | STUDY M',
-        description: 'STUDY M 각 지점의 위치와 교통편을 안내합니다.',
-        keywords: '스터디엠 위치, 찾아오시는 길, 평촌 관리형',
+        title: '오시는 길 — 지점 위치·교통편·주차 안내 | STUDY M',
+        description: '가까운 STUDY M을 빠르게 찾으세요. 지점별 주소, 지하철·버스 교통편, 주차 안내를 제공합니다.',
+        keywords: '스터디엠 오시는 길, 지점 위치, 평촌 스터디카페 주차, 관리형 독서실 교통편',
     },
     '/about': {
         title: '회사 소개 | STUDY M',
@@ -83,10 +83,10 @@ export const PAGE_META = {
         description: 'STUDY M의 개인정보 수집, 이용, 보호에 관한 정책입니다.',
         keywords: '',
     },
-    '/contact': {
-        title: '상담 문의 | STUDY M',
-        description: '입학 상담, 프로그램 문의, 방문 예약 등 STUDY M에 문의하세요.',
-        keywords: '스터디엠 문의, 입학 상담, 방문 예약, 학원 상담',
+    '/manual': {
+        title: '운영 매뉴얼 및 이용약관 | STUDY M',
+        description: 'STUDY M의 운영 지침, 이용약관, 환불 정책 등 회원이 알아야 할 모든 약관과 정책을 확인하세요.',
+        keywords: 'STUDY M 이용약관, 운영 매뉴얼, 환불 정책, 관리형 스터디카페 약관',
     },
 };
 
