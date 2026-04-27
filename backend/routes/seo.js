@@ -44,6 +44,7 @@ router.get('/sitemap.xml', asyncHandler(async (req, res) => {
         { path: '/locations', changefreq: 'monthly', priority: '0.7' },
         { path: '/about', changefreq: 'monthly', priority: '0.6' },
         { path: '/features', changefreq: 'monthly', priority: '0.6' },
+        { path: '/manual', changefreq: 'yearly', priority: '0.4' },
         { path: '/privacy', changefreq: 'yearly', priority: '0.3' }
     ];
 
