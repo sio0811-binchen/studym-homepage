@@ -16,7 +16,6 @@ Disallow: /pay/
 Disallow: /guide
 Disallow: /columns
 Disallow: /column/
-Disallow: /manual
 
 # UTM 파라미터가 있는 URL 차단 (중복 콘텐츠 방지)
 Disallow: /*?utm_*
